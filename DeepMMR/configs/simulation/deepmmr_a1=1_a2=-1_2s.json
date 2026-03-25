@@ -1,0 +1,10 @@
+{
+    "learning_rate": 0.01,
+    "l2_penalty": 1e-07,
+    "dropout_prob": 0.1,
+    "network_depth": 3.0,
+    "network_width": 40.0,
+    "n_epochs": 200,
+    "batch_size": 100,
+    "loss_name": "U_statistic"
+}
