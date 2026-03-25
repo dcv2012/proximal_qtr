@@ -10,6 +10,7 @@ from Main.src.step2_inner import inner_optimization
 from Main.src.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 
 def run_experiment(n_train=2000, n_val=500, n_test=1000, seed=42, K_folds=2, max_alt_iters=3, tau=0.5, phi_type=1, model_type="linear"):
+    # 设定随机种子
     np.random.seed(seed)
     torch.manual_seed(seed)
     
