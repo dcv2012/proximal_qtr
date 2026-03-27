@@ -213,7 +213,7 @@ def optimize_hyperparams(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, 
     best_params['epochs'] = 200 # 找到最佳结构后再稍微多跑点epoch进行最终收敛
     return best_params
 
-def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2: int, n_trials: int = 15) -> Callable[[pd.DataFrame], np.ndarray]:
+def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2: int, n_trials: int = 15) -> Tuple[Callable[[pd.DataFrame], np.ndarray], nn.Module, Dict[str, Any]]:
     """
     封装了调优+最终训练的全工作流。
     返回训练好的 q22 预测器函数。
@@ -247,7 +247,7 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2:
             preds = model_q22(torch.cat([Z1, Z2, Y0, Y1], dim=1))
         return preds.cpu().numpy().flatten()
         
-    return predict_q22
+    return predict_q22, model_q22, best_params
     
 
 if __name__ == "__main__":
