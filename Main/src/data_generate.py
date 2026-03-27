@@ -225,6 +225,53 @@ def intervened_data_gen(sample_size: int, para_set: dict, a: list = [1, 1]) -> p
     })
     return df
 
+def dynamic_intervened_data_gen(sample_size: int, para_set: dict, f1=None, f2=None, device='cpu') -> pd.DataFrame:
+    """
+    生成动态干预反事实数据。治疗 A1 和 A2 严格由传入的策略模型 f1 和 f2 动态决断。
+    """
+    import torch
+    N = sample_size
+    Y0 = np.random.normal(para_set['mu_Y0'], para_set['sigma_Y0'], N)
+    U0 = np.random.normal(para_set['mu_U0'], para_set['sigma_U0'], N)
+    
+    with torch.no_grad():
+        H1 = torch.tensor(Y0, dtype=torch.float32).unsqueeze(1).to(device)
+        A1 = np.sign(f1(H1).cpu().numpy().flatten())
+        A1[A1 == 0] = 1
+        
+    design_Z1 = np.column_stack((np.ones(N), A1, Y0, U0))
+    Z1 = np.dot(design_Z1, para_set['mu_Z1']) + np.random.normal(0, para_set['sigma_Z1'], N)
+    
+    design_W1 = np.column_stack((np.ones(N), Y0, U0))
+    W1 = np.dot(design_W1, para_set['mu_W1']) + np.random.normal(0, para_set['sigma_W1'], N)
+    
+    design_Y1U1 = np.column_stack((np.ones(N), A1, Y0, U0))
+    Y1 = np.dot(design_Y1U1, para_set['mu_Y1']) + np.random.normal(0, para_set['sigma_Y1'], N)
+    U1 = np.dot(design_Y1U1, para_set['mu_U1']) + np.random.normal(0, para_set['sigma_U1'], N)
+    
+    with torch.no_grad():
+        H2 = torch.cat([
+            torch.tensor(Y0, dtype=torch.float32).unsqueeze(1).to(device),
+            torch.tensor(Y1, dtype=torch.float32).unsqueeze(1).to(device),
+            torch.tensor(A1, dtype=torch.float32).unsqueeze(1).to(device)
+        ], dim=1)
+        A2 = np.sign(f2(H2).cpu().numpy().flatten())
+        A2[A2 == 0] = 1
+        
+    design_Z2 = np.column_stack((np.ones(N), Z1, A2, Y1, U1, A1, Y0, U0))
+    Z2 = np.dot(design_Z2, para_set['mu_Z2']) + np.random.normal(0, para_set['sigma_Z2'], N)
+    
+    design_W2 = np.column_stack((np.ones(N), W1, Y1, U1, Y0, U0))
+    W2 = np.dot(design_W2, para_set['mu_W2']) + np.random.normal(0, para_set['sigma_W2'], N)
+    
+    design_Y2 = np.column_stack((np.ones(N), A2, A1, A2 * A1, W2, W1, Y1, U1, Y0, U0))
+    Y2 = np.dot(design_Y2, para_set['mu_Y2']) + np.random.normal(0, para_set['sigma_Y2'], N)
+    
+    df = pd.DataFrame({
+        'Y0': Y0, 'U0': U0, 'A1': A1, 'Z1': Z1, 'W1': W1,
+        'Y1': Y1, 'U1': U1, 'A2': A2, 'Z2': Z2, 'W2': W2, 'Y2': Y2
+    })
+    return df
 
 
 # Test for data generation
