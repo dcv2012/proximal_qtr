@@ -1,7 +1,9 @@
 import os
+import json
 import torch
 import numpy as np
 import argparse
+import pandas as pd
 
 from Main.src.data_generate import dynamic_intervened_data_gen, intervened_data_gen, adjust_para_set_for_new_coding, origin_para_set
 from Main.estimate import train_policy
@@ -9,7 +11,7 @@ from Main.estimate import train_policy
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def run_monte_carlo(n_train=1000, seed=2026, K_folds=2, max_alt_iters=3, tau=0.5, phi_type=1, model_type="linear", 
-                     mc_reps=100, compare_oracle=True):
+                     mc_reps=100):
     """
     Monte Carlo 模拟：重复 B 次 (mc_reps) 实验。
     每次实验：
@@ -63,17 +65,78 @@ def run_monte_carlo(n_train=1000, seed=2026, K_folds=2, max_alt_iters=3, tau=0.5
     print(f"Model Mean True Quantile:  {q_mean:.4f}")
     print(f"Model Standard Deviation:   {q_std:.4f}")
     
-    if compare_oracle:
-        # 计算 Regret 和 RMSE
-        regret = oracle_q - q_mean
-        rmse = np.sqrt(np.mean((oracle_q - np.array(q_values))**2))
-        
-        print("-" * 30)
-        print(f"True Regret (Oracle-Mean): {regret:.4f}")
-        print(f"RMSE (Root Mean Sq Error): {rmse:.4f}")
+    # 计算 Regret 和 RMSE (现在强制汇报)
+    regret = oracle_q - q_mean
+    rmse = np.sqrt(np.mean((oracle_q - np.array(q_values))**2))
+    
+    print("-" * 30)
+    print(f"True Regret (Oracle-Mean): {regret:.4f}")
+    print(f"RMSE (Root Mean Sq Error): {rmse:.4f}")
         
     print("="*50 + "\n")
-    return q_mean, q_std, q_values
+    return oracle_q, q_mean, q_std, regret, rmse
+
+
+def run_parameter_grid_analysis():
+    # 模拟设置
+    n_train_list = [500, 1000, 5000, 10000]
+    phi_types = [1, 2, 3, 4]
+    model_types = ["linear", "nn"]
+    tau = 0.5
+    seed = 20026
+    mc_reps = 100
+    
+    results_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'mc_res')
+    os.makedirs(results_dir, exist_ok=True)
+    
+    summary_data = []
+
+    print(f"🌟 Starting Comprehensive Parameter Analysis across {len(n_train_list)} scale steps...")
+    
+    for n_train in n_train_list:
+        print(f"\n##########################################")
+        print(f"  SCALE STEP: N_TRAIN = {n_train}")
+        print(f"##########################################")
+        
+        for m_type in model_types:
+            for p_type in phi_types:
+                config_name = f"ntrain{n_train}_tau{tau}_phi{p_type}_model{m_type}"
+                result_file = os.path.join(results_dir, f"{config_name}.json")
+                
+                print(f"\n[Running] {config_name}...")
+                
+                # 运行 MC 仿真 (直接获取oracle、均值、标准差、Regret 和 RMSE)
+                oracle_q, q_mean, q_std, regret, rmse = run_monte_carlo(
+                    n_train=n_train, seed=seed, tau=tau, 
+                    phi_type=p_type, model_type=m_type, 
+                    mc_reps=mc_reps
+                )
+                
+                # 记录结果 (直接使用返回值，不再重复采样计算)
+                res_dict = {
+                    "n_train": n_train,
+                    "tau": tau,
+                    "phi_type": p_type,
+                    "model_type": m_type,
+                    "mc_reps": mc_reps,
+                    "oracle_q": float(oracle_q),
+                    "mean_q": float(q_mean),
+                    "std_q": float(q_std),
+                    "regret": float(regret),
+                    "rmse": float(rmse)
+                }
+                
+                with open(result_file, 'w') as f:
+                    json.dump(res_dict, f, indent=4)
+                
+                summary_data.append(res_dict)
+
+    # 导出汇总 CSV 方便绘图
+    df_results = pd.DataFrame(summary_data)
+    df_results.to_csv(os.path.join(results_dir, "full_summary.csv"), index=False)
+    print(f"\n✅ All grid experiments finished. Summary saved to results/mc_res/full_summary.csv")
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Monte Carlo Estimator Performance Simulator")
@@ -84,11 +147,14 @@ if __name__ == "__main__":
     parser.add_argument("--model_type", type=str, default="linear")
     parser.add_argument("--folds", type=int, default=2)
     parser.add_argument("--reps", type=int, default=10, help="Number of MC repetitions")
-    parser.add_argument("--no_compare", action="store_true", help="Skip Oracle comparison")
+    parser.add_argument("--grid", action="store_true", help="Run full parameter grid analysis instead of single run")
     args = parser.parse_args()
     
-    run_monte_carlo(
-        n_train=args.n_train, seed=args.seed, K_folds=args.folds, 
-        tau=args.tau, phi_type=args.phi_type, model_type=args.model_type,
-        mc_reps=args.reps, compare_oracle=not args.no_compare
-    )
+    if args.grid:
+        run_parameter_grid_analysis()
+    else:
+        run_monte_carlo(
+            n_train=args.n_train, seed=args.seed, K_folds=args.folds, 
+            tau=args.tau, phi_type=args.phi_type, model_type=args.model_type,
+            mc_reps=args.reps
+        )
