@@ -6,7 +6,7 @@ import argparse
 import pandas as pd
 
 from Main.src.data_generate import dynamic_intervened_data_gen, intervened_data_gen, adjust_para_set_for_new_coding, origin_para_set
-from Main.estimate import train_policy
+from Main.src.qtr_biopt_sl.estimate import train_policy
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

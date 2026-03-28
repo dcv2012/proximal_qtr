@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import argparse
 
-from Main.src.step2_inner import inner_optimization
-from Main.src.step3_outer import Policy_Linear, Policy_NN, psi
+from Main.src.qtr_biopt_sl.step2_inner import inner_optimization
+from Main.src.qtr_biopt_sl.step3_outer import Policy_Linear, Policy_NN, psi
 from Main.src.deepmmr.MMR_model import MLP_for_MMR
 from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
 
@@ -39,7 +39,8 @@ def load_q22_model(model_path):
     return model
 
 def offline_evaluation(df_test: pd.DataFrame, config_str: str, tau: float = 0.5, phi_type: int = 1, model_type: str = "linear"):
-    models_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models')
+    # 模型统一保存在 Main/models 目录下 (当前文件在 Main/src/qtr_biopt_sl/)
+    models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'models'))
     
     # 1. Load Policies
     f1_path = os.path.join(models_dir, f"f1_{config_str}.pt")
