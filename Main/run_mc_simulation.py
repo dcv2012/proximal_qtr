@@ -55,36 +55,36 @@ def run_monte_carlo(n_train=1000, seed=2026, K_folds=2, max_alt_iters=3, tau=0.5
     print(f"      FINAL MONTE CARLO SUMMARY ({mc_reps} REPS)     ")
     print("="*50)
     
-    # 无论是否进行指标对比，首先汇报上帝视角的真值 (Oracle)
-    print(f"[Oracle Context] Estimating Policy Ceiling (Always Treat)...")
-    df_oracle = intervened_data_gen(mc_sample_size * 5, params, a=[1, 1])
-    oracle_q = np.quantile(df_oracle['Y2'], tau)
-    print(f"Oracle True Quantile:      {oracle_q:.4f}")
+    # 无论是否进行指标对比，首先汇报DGP过程算出的真值 (True)
+    print(f"Estimating Policy Ceiling (Always Treat)...")
+    df_true = intervened_data_gen(mc_sample_size * 10, params, a=[1, 1])
+    true_q = np.quantile(df_true['Y2'], tau)
+    print(f"True Quantile:      {true_q:.4f}")
     
     print("-" * 30)
     print(f"Model Mean True Quantile:  {q_mean:.4f}")
     print(f"Model Standard Deviation:   {q_std:.4f}")
     
     # 计算 Regret 和 RMSE (现在强制汇报)
-    regret = oracle_q - q_mean
-    rmse = np.sqrt(np.mean((oracle_q - np.array(q_values))**2))
+    regret = true_q - q_mean
+    rmse = np.sqrt(np.mean((true_q - np.array(q_values))**2))
     
     print("-" * 30)
-    print(f"True Regret (Oracle-Mean): {regret:.4f}")
+    print(f"True Regret (True- Mean by estimated policies): {regret:.4f}")
     print(f"RMSE (Root Mean Sq Error): {rmse:.4f}")
         
     print("="*50 + "\n")
-    return oracle_q, q_mean, q_std, regret, rmse
+    return true_q, q_mean, q_std, regret, rmse
 
 
-def run_parameter_grid_analysis():
+def run_parameter_grid_analysis(n_reps:int):
     # 模拟设置
-    n_train_list = [500, 1000, 5000, 10000]
+    n_train_list = [5000, 10000] # 500, 2000
     phi_types = [1, 2, 3, 4]
     model_types = ["linear", "nn"]
     tau = 0.5
     seed = 20026
-    mc_reps = 100
+    mc_reps = n_reps
     
     results_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'mc_res')
     os.makedirs(results_dir, exist_ok=True)
@@ -105,8 +105,8 @@ def run_parameter_grid_analysis():
                 
                 print(f"\n[Running] {config_name}...")
                 
-                # 运行 MC 仿真 (直接获取oracle、均值、标准差、Regret 和 RMSE)
-                oracle_q, q_mean, q_std, regret, rmse = run_monte_carlo(
+                # 运行 MC 仿真 (直接获取true、均值、标准差、Regret 和 RMSE)
+                true_q, q_mean, q_std, regret, rmse = run_monte_carlo(
                     n_train=n_train, seed=seed, tau=tau, 
                     phi_type=p_type, model_type=m_type, 
                     mc_reps=mc_reps
@@ -119,7 +119,7 @@ def run_parameter_grid_analysis():
                     "phi_type": p_type,
                     "model_type": m_type,
                     "mc_reps": mc_reps,
-                    "oracle_q": float(oracle_q),
+                    "true_q": float(true_q),
                     "mean_q": float(q_mean),
                     "std_q": float(q_std),
                     "regret": float(regret),
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     if args.grid:
-        run_parameter_grid_analysis()
+        run_parameter_grid_analysis(n_reps=50)
     else:
         run_monte_carlo(
             n_train=args.n_train, seed=args.seed, K_folds=args.folds, 

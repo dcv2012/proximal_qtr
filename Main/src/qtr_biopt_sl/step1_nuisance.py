@@ -72,7 +72,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
     optimizer = optim.AdamW(model.parameters(), lr=params['lr'], weight_decay=params['l2'])
     
     early_stopping = EarlyStopping()
-    best_model_state = None
+    best_model_state = model.state_dict() # 初始状态占位，防止训练全量发散时返回 None
     best_val_loss = float('inf')
     
     for epoch in range(params['epochs']):
@@ -103,7 +103,8 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
             total_val_loss /= len(val_loader)
             
         early_stopping(total_val_loss)
-        if total_val_loss < best_val_loss:
+        # 增加对 NaN 的健壮性判断
+        if not np.isnan(total_val_loss) and total_val_loss < best_val_loss:
             best_val_loss = total_val_loss
             best_model_state = model.state_dict()
         if early_stopping.early_stop:
@@ -118,7 +119,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
     optimizer = optim.AdamW(model.parameters(), lr=params['lr'], weight_decay=params['l2'])
     
     early_stopping = EarlyStopping()
-    best_model_state = None
+    best_model_state = model.state_dict() # 初始状态占位
     best_val_loss = float('inf')
     
     model_q11.eval()
@@ -159,7 +160,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
             total_val_loss /= len(val_loader)
             
         early_stopping(total_val_loss)
-        if total_val_loss < best_val_loss:
+        if not np.isnan(total_val_loss) and total_val_loss < best_val_loss:
             best_val_loss = total_val_loss
             best_model_state = model.state_dict()
         if early_stopping.early_stop:
