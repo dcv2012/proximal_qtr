@@ -6,17 +6,17 @@ import torch
 from torch.utils.data import DataLoader
 
 from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
-from Main.src.qtr_biopt_sl.step1_nuisance import estimate_nuisance, prepare_tensors
-from Main.src.qtr_biopt_sl.step2_inner import inner_optimization
-from Main.src.qtr_biopt_sl.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
+from Main.src.prox_qtr_sl.step1_nuisance import estimate_nuisance, prepare_tensors
+from Main.src.prox_qtr_sl.step2_inner import inner_optimization
+from Main.src.prox_qtr_sl.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 
 import os
 
 def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed, df_train):
     
     print("----Saving Models---- ")
-    # 模型统一保存在 Main/models 目录下 (当前文件在 Main/src/qtr_biopt_sl/)
-    models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'models'))
+    # 模型统一保存在 Main/models 目录下 (当前文件在 Main/src/prox_qtr_sl/)
+    models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'models'))
     os.makedirs(models_dir, exist_ok=True)
     
     config_str = f"ntrain{n_train}_tau{tau}_phi{phi_type}_model{model_type}_seed{seed}"
@@ -44,7 +44,7 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
             
     print("📁 4 standalone q22 Nuisance Models securely saved for offline evaluation!")
 
-def train_policy(n_train=2000, seed=42, K_folds=2, max_alt_iters=3, tau=0.5, phi_type=1, model_type="linear", save_models=False):
+def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=3, tau=0.5, phi_type=1, model_type="linear", save_models=False):
     # 设定随机种子
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -140,7 +140,8 @@ def train_policy(n_train=2000, seed=42, K_folds=2, max_alt_iters=3, tau=0.5, phi
         f1, f2, val_loss = train_outer_policies(train_loader, val_loader, best_params, phi_type=phi_type, model_type=model_type)
         best_sv = -val_loss
         
-        f1.eval(); f2.eval()
+        f1.eval()
+        f2.eval()
         with torch.no_grad():
             device_f1 = next(f1.parameters()).device
             device_f2 = next(f2.parameters()).device
@@ -189,4 +190,4 @@ if __name__ == "__main__":
     parser.add_argument("--model_type", type=str, default="linear", choices=["linear", "nn"], help="Type of policy network (linear or nn)")
     args = parser.parse_args()
     
-    train_policy(args.n_train, args.seed, args.folds, tau=args.tau, phi_type=args.phi_type, model_type=args.model_type, save_models=True)
+    train_policy_prox_qtr_sl(args.n_train, args.seed, args.folds, tau=args.tau, phi_type=args.phi_type, model_type=args.model_type, save_models=True)

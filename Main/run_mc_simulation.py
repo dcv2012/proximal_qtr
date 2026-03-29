@@ -6,75 +6,94 @@ import argparse
 import pandas as pd
 
 from Main.src.data_generate import dynamic_intervened_data_gen, intervened_data_gen, adjust_para_set_for_new_coding, origin_para_set
-from Main.src.qtr_biopt_sl.estimate import train_policy
+from Main.src.prox_qtr_sl.estimate_prox_qtr_sl import train_policy_prox_qtr_sl
+from Main.src.SRA.estimate_SRA import train_policy_SRA
+from Main.src.Oracle.estimate_Oracle import train_policy_Oracle
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def run_monte_carlo(n_train=1000, seed=2026, K_folds=2, max_alt_iters=3, tau=0.5, phi_type=1, model_type="linear", 
                      mc_reps=100):
     """
-    Monte Carlo 模拟：重复 B 次 (mc_reps) 实验。
-    每次实验：
-    1. 生成新的训练/验证集。
-    2. 训练出策略 f1, f2。
-    3. 生成极大量的独立反事实数据，计算该策略的“真实”分位数值。
-    最后统计均值和标准差。
+    Monte Carlo 模拟：重复 B 次 (mc_reps) 实验，比较 Proximal QTR, SRA 和 Oracle。
     """
     params = adjust_para_set_for_new_coding(origin_para_set)
-    # 强制设定 mc_n 为训练集大小的 10 倍
     mc_sample_size = n_train * 10
     
-    q_values = []
-    print(f"🚀 Starting Monte Carlo Simulation: Total {mc_reps} reps...")
+    # 初始化三个方法的存储列表
+    q_values_prox = []
+    q_values_sra = []
+    q_values_oracle = []
+    
+    print(f"🚀 Starting Comparative Monte Carlo Simulation: Total {mc_reps} reps...")
     print(f"   Settings: n_train={n_train}, tau={tau}, phi={phi_type}, model={model_type}")
     
     for i in range(mc_reps):
         current_seed = seed + i
         print(f"\n>>> MC Repetition {i+1}/{mc_reps} (Seed: {current_seed})")
         
-        # 1. 重新训练模型 (不保存模型文件以节省磁盘 IO)
-        f1, f2, q_train_est, _ = train_policy(
+        # --- 1. Proximal QTR ---
+        print("    [Method] Proximal QTR...")
+        f1_p, f2_p, _, _ = train_policy_prox_qtr_sl(
             n_train=n_train, seed=current_seed, K_folds=K_folds, 
             max_alt_iters=max_alt_iters, tau=tau, 
             phi_type=phi_type, model_type=model_type, save_models=False
         )
+        df_mc_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device)
+        q_values_prox.append(np.quantile(df_mc_p['Y2'], tau))
         
-        # 2. 生成极大量的独立评估数据 (使用独立 seed 确保评估的公平性)
-        # 用训练好的模型指导干预
-        df_mc = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1, f2=f2, device=device)
+        # --- 2. SRA Estimator ---
+        print("    [Method] SRA (Logistic)...")
+        f1_s, f2_s, _, _ = train_policy_SRA(
+            n_train=n_train, seed=current_seed, tau=tau, 
+            phi_type=phi_type, model_type=model_type, save_models=False
+        )
+        df_mc_s = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_s, f2=f2_s, device=device)
+        q_values_sra.append(np.quantile(df_mc_s['Y2'], tau))
         
-        # 3. 计算在介入分布下的真实分位数值
-        mc_q = np.quantile(df_mc['Y2'], tau)
-        q_values.append(mc_q)
-        print(f"    Result for Rep {i+1}: True Q_{tau} = {mc_q:.4f}")
+        # --- 3. Oracle Estimator ---
+        print("    [Method] Oracle (Unbiased)...")
+        f1_o, f2_o, _, _ = train_policy_Oracle(
+            n_train=n_train, seed=current_seed, tau=tau, 
+            phi_type=phi_type, model_type=model_type, save_models=False
+        )
+        df_mc_o = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_o, f2=f2_o, device=device)
+        q_values_oracle.append(np.quantile(df_mc_o['Y2'], tau))
+        
+        print(f"    Rep {i+1} Results: Prox={q_values_prox[-1]:.4f}, SRA={q_values_sra[-1]:.4f}, Oracle={q_values_oracle[-1]:.4f}")
             
-    q_mean = np.mean(q_values)
-    q_std = np.std(q_values)
-    
-    print("\n" + "="*50)
-    print(f"      FINAL MONTE CARLO SUMMARY ({mc_reps} REPS)     ")
-    print("="*50)
-    
-    # 无论是否进行指标对比，首先汇报DGP过程算出的真值 (True)
-    print(f"Estimating Policy Ceiling (Always Treat)...")
-    df_true = intervened_data_gen(mc_sample_size * 10, params, a=[1, 1])
+    # 计算 DGP 的真实上限 (Always Treat [1,1])
+    print(f"\nEstimating Policy Ceiling (Always Treat)...")
+    df_true = intervened_data_gen(mc_sample_size * 20, params, a=[1, 1])
     true_q = np.quantile(df_true['Y2'], tau)
-    print(f"True Quantile:      {true_q:.4f}")
+
+    # 结果汇总计算
+    methods = ["Proximal", "SRA", "Oracle"]
+    q_data = [np.array(q_values_prox), np.array(q_values_sra), np.array(q_values_oracle)]
     
-    print("-" * 30)
-    print(f"Model Mean True Quantile:  {q_mean:.4f}")
-    print(f"Model Standard Deviation:   {q_std:.4f}")
+    summary_list = []
+    for name, vals in zip(methods, q_data):
+        m_q = np.mean(vals)
+        std_q = np.std(vals)
+        regret = true_q - m_q
+        rmse = np.sqrt(np.mean((true_q - vals)**2))
+        summary_list.append({
+            "Method": name, "Mean_Q": m_q, "Std_Q": std_q, "Regret": regret, "RMSE": rmse
+        })
+
+    # 打印对比表格
+    print("\n" + "="*85)
+    print(f"      COMPARATIVE MONTE CARLO SUMMARY ({mc_reps} REPS) - True Upper bound: {true_q:.4f}     ")
+    print("="*85)
+    print(f"{'Method':<15} | {'Mean Q':<12} | {'Std Q':<12} | {'Regret':<12} | {'RMSE':<12}")
+    print("-" * 85)
+    for s in summary_list:
+        print(f"{s['Method']:<15} | {s['Mean_Q']:<12.4f} | {s['Std_Q']:<12.4f} | {s['Regret']:<12.4f} | {s['RMSE']:<12.4f}")
+    print("="*85 + "\n")
     
-    # 计算 Regret 和 RMSE (现在强制汇报)
-    regret = true_q - q_mean
-    rmse = np.sqrt(np.mean((true_q - np.array(q_values))**2))
-    
-    print("-" * 30)
-    print(f"True Regret (True- Mean by estimated policies): {regret:.4f}")
-    print(f"RMSE (Root Mean Sq Error): {rmse:.4f}")
-        
-    print("="*50 + "\n")
-    return true_q, q_mean, q_std, regret, rmse
+    # 为了保持外部调用的兼容性，默认返回 Proximal 的结果
+    prox_res = summary_list[0]
+    return true_q, prox_res['Mean_Q'], prox_res['Std_Q'], prox_res['Regret'], prox_res['RMSE']
 
 
 def run_parameter_grid_analysis(n_reps:int):
