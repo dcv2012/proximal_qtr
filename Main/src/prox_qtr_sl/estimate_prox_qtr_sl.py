@@ -44,7 +44,7 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
             
     print("📁 4 standalone q22 Nuisance Models securely saved for offline evaluation!")
 
-def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=3, tau=0.5, phi_type=1, model_type="linear", save_models=False):
+def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear", save_models=False):
     # 设定随机种子
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -86,8 +86,8 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=3, 
                     continue
                     
                 # 仅仅用内部的 sub_train 和 sub_val 联合预测，导出的预估器对于 df_oof_fold 将完全保持无偏
-                # n_trials 设较小以提升模拟速度，生产环境中可加大至例如 20-50
-                predict_q22_fn, _, _ = estimate_nuisance(sub_train_fold, sub_val_fold, a1, a2, n_trials=5)
+                # n_trials 统一设置为 10
+                predict_q22_fn, _, _ = estimate_nuisance(sub_train_fold, sub_val_fold, a1, a2, n_trials=10)
                 
                 # 对 OOF 集合做预测，但只针对匹配 (A_1=a_1, A_2=a_2) 的观测
                 oof_sub_mask = (df_oof_fold['A1'] == a1) & (df_oof_fold['A2'] == a2)
@@ -128,14 +128,14 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=3, 
         
         # Outer Level
         best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
-                                                 q_current, n_trials=5, epochs=100, phi_type=phi_type, model_type=model_type)
+                                                 q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
         
         print(f"Optimal configs: {best_params}")
         
         train_dataset = prepare_outer_tensors(df_train, q22_train_oof, q_current)
         val_dataset = prepare_outer_tensors(df_val, q22_val_preds, q_current)
-        train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False)
+        train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False)
         
         f1, f2, val_loss = train_outer_policies(train_loader, val_loader, best_params, phi_type=phi_type, model_type=model_type)
         best_sv = -val_loss
@@ -154,19 +154,26 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=3, 
             f2_train_out = f2(H2_train).cpu().numpy().flatten()
             
             # 使用符号函数生成新策略指示器
-            d1_pred = np.sign(f1_train_out)
-            d1_pred[d1_pred == 0] = 1 # boundary decision
+            d1_new = np.sign(f1_train_out)
+            d1_new[d1_new == 0] = 1 # boundary decision
             
-            d2_pred = np.sign(f2_train_out)
-            d2_pred[d2_pred == 0] = 1
+            d2_new = np.sign(f2_train_out)
+            d2_new[d2_new == 0] = 1
+            
+            diff_ratio = 0.5 * (np.mean(d1_new != d1_pred) + np.mean(d2_new != d2_pred))
+            print(f"    -> Policy Action change ratio: {diff_ratio:.4f}")
+            
+            d1_pred = d1_new
+            d2_pred = d2_new
             
         # Inner Level -> Update q
         new_q = inner_optimization(df_train['Y2'], df_train['A1'], df_train['A2'], 
                                    d1_pred, d2_pred, q22_train_oof, tau=tau)
         print(f"Updated optimal q: {new_q:.4f} (Previous q: {q_current:.4f})")
         
-        if np.abs(new_q - q_current) < 1e-4:
-            print("Quantile constraint bounds have successfully converged!")
+        # 退出条件: 至少经过 1 轮完整更新，且 q 的变化极小同时策略几乎不再变化
+        if it > 0 and (np.abs(new_q - q_current) < 1e-6) and (diff_ratio < 1e-4):
+            print("Quantile constraint bounds and Policy actions have successfully converged!")
             q_current = new_q
             break
             

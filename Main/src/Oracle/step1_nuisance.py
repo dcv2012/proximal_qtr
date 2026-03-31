@@ -17,10 +17,10 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, n_trials: in
     y2_train = (df_train['A2'] == 1).astype(int)
     
     print("Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...")
-    clf1 = LogisticRegression(penalty='none', solver='lbfgs') # Oracle 理论上不应需要 L2 惩罚以保持无偏性
+    clf1 = LogisticRegression(penalty=None, solver='lbfgs') # Oracle 理论上不应需要 L2 惩罚以保持无偏性
     clf1.fit(df_train[features1], y1_train)
     
-    clf2 = LogisticRegression(penalty='none', solver='lbfgs')
+    clf2 = LogisticRegression(penalty=None, solver='lbfgs')
     clf2.fit(df_train[features2], y2_train)
     
     def predict_weights(df_test: pd.DataFrame) -> np.ndarray:
@@ -34,8 +34,8 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, n_trials: in
         pi2 = np.where(A2 == 1, prob2, 1 - prob2)
         
         # 数值稳定性
-        pi1 = np.clip(pi1, 1e-4, 1.0)
-        pi2 = np.clip(pi2, 1e-4, 1.0)
+        pi1 = np.clip(pi1, 1e-6, 1.0)
+        pi2 = np.clip(pi2, 1e-6, 1.0)
         
         return 1.0 / (pi1 * pi2)
         

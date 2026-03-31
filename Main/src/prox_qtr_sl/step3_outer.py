@@ -162,15 +162,15 @@ def train_outer_policies(train_loader: DataLoader, val_loader: DataLoader, param
     return model_f1, model_f2, best_val_loss
 
 
-def optimize_outer_hyperparams(df_train: pd.DataFrame, q22_train: np.ndarray, df_val: pd.DataFrame, q22_val: np.ndarray, q: float, n_trials: int = 10, epochs: int = 150, phi_type: int = 1, model_type: str = "linear") -> Dict[str, Any]:
+def optimize_outer_hyperparams(df_train: pd.DataFrame, q22_train: np.ndarray, df_val: pd.DataFrame, q22_val: np.ndarray, q: float, n_trials: int = 10, epochs: int = 200, phi_type: int = 1, model_type: str = "linear") -> Dict[str, Any]:
     """
     使用 Optuna 优化外层模型(f1, f2)的架构与学习率
     """
     train_dataset = prepare_outer_tensors(df_train, q22_train, q)
     val_dataset = prepare_outer_tensors(df_val, q22_val, q)
     
-    train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False)
     
     def objective(trial):
         params = {

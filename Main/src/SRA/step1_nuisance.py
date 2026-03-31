@@ -8,9 +8,8 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, n_trials: in
     SRA 估计器的 Step 1：使用 Logistic Regression 估计倾向得分。
     符合顺序随机化假设 (SRA)，基于观测到的历史变量。
     """
-    # 按照 method.tex 4.3.3 定义的 X1_SRA 和 X2_SRA
-    features1 = ['Y0', 'Z1', 'W1']
-    features2 = ['Y0', 'Y1', 'Z1', 'Z2', 'W1', 'W2', 'A1']
+    features1 = ['Y0']
+    features2 = ['Y0', 'Y1', 'A1']
     
     # 合并训练和验证集进行最后模型估计 (Logistic Regression 往往在更多数据上更稳健)
     # 或者只使用训练集。这里遵循 pipeline 习惯使用 train。
@@ -41,8 +40,8 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, n_trials: in
         pi2 = np.where(A2 == 1, prob2, 1 - prob2)
         
         # 数值稳定性截断
-        pi1 = np.clip(pi1, 1e-4, 1.0)
-        pi2 = np.clip(pi2, 1e-4, 1.0)
+        pi1 = np.clip(pi1, 1e-6, 1.0)
+        pi2 = np.clip(pi2, 1e-6, 1.0)
         
         return 1.0 / (pi1 * pi2)
         

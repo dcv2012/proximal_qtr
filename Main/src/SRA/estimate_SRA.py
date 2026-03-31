@@ -20,7 +20,7 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
     torch.save({'state_dict': f2.state_dict(), 'hyperparams': best_params}, os.path.join(models_dir, f"f2_{config_str}.pt"))
     print(f"📁 SRA Policy Models saved with prefix: {config_str}")
 
-def train_policy_SRA(n_train=2000, seed=42, K_folds=2, max_alt_iters=3, tau=0.5, phi_type=1, model_type="linear", save_models=False):
+def train_policy_SRA(n_train=2000, seed=42, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear", save_models=False):
     np.random.seed(seed)
     torch.manual_seed(seed)
     n_val = int(n_train * 0.25)
@@ -49,10 +49,10 @@ def train_policy_SRA(n_train=2000, seed=42, K_folds=2, max_alt_iters=3, tau=0.5,
     f1, f2 = None, None
     for it in range(max_alt_iters):
         print(f"--- Iter {it+1}/{max_alt_iters} (q={q_current:.4f}) ---")
-        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=5, phi_type=phi_type, model_type=model_type)
+        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
         ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
         ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
-        f1, f2, val_loss = train_outer_policies(DataLoader(ds_t, 256, True), DataLoader(ds_v, 256, False), best_p, phi_type, model_type)
+        f1, f2, val_loss = train_outer_policies(DataLoader(ds_t, 128, True), DataLoader(ds_v, 128, False), best_p, phi_type, model_type)
         f1.eval()
         f2.eval()
         with torch.no_grad():
@@ -60,12 +60,23 @@ def train_policy_SRA(n_train=2000, seed=42, K_folds=2, max_alt_iters=3, tau=0.5,
             H2 = torch.cat([torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1),
                             torch.tensor(df_train['Y1'].values, dtype=torch.float32).unsqueeze(1),
                             torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)], dim=1).to(next(f2.parameters()).device)
-            d1_pred = np.sign(f1(H1).cpu().numpy().flatten())
-            d1_pred[d1_pred==0]=1
-            d2_pred = np.sign(f2(H2).cpu().numpy().flatten())
-            d2_pred[d2_pred==0]=1
+            d1_new = np.sign(f1(H1).cpu().numpy().flatten())
+            d1_new[d1_new==0]=1
+            d2_new = np.sign(f2(H2).cpu().numpy().flatten())
+            d2_new[d2_new==0]=1
+            
+            diff_ratio = 0.5 * (np.mean(d1_new != d1_pred) + np.mean(d2_new != d2_pred))
+            print(f"    -> Policy Action change ratio: {diff_ratio:.4f}")
+            
+            d1_pred = d1_new
+            d2_pred = d2_new
+            
         new_q = inner_optimization(df_train['Y2'], df_train['A1'], df_train['A2'], d1_pred, d2_pred, ipw_train_oof, tau=tau)
-        if abs(new_q - q_current) < 1e-4: break
+        if it > 0 and (abs(new_q - q_current) < 1e-6) and (diff_ratio < 1e-4): 
+            break
         q_current = new_q
-    if save_models: save_trained_models(f1, f2, best_p, n_train, tau, phi_type, model_type, seed)
+
+    if save_models: 
+        save_trained_models(f1, f2, best_p, n_train, tau, phi_type, model_type, seed)
+        
     return f1, f2, q_current, -val_loss

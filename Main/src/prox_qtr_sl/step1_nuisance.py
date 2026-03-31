@@ -190,7 +190,7 @@ def optimize_hyperparams(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, 
             'dropout_prob': trial.suggest_float('dropout_prob', 0.1, 0.5),
             'lr': trial.suggest_float('lr', 1e-4, 1e-2, log=True),
             'l2': trial.suggest_float('l2', 1e-6, 1e-2, log=True),
-            'epochs': 100
+            'epochs': 200
         }
         
         # 1. Train q11
@@ -227,8 +227,8 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2:
     val_dataset = prepare_tensors(df_val, a1, a2)
     
     # 增加Batch Size加速训练
-    train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False)
     
     print("Training Final q11 Checkpoint...")
     model_q11, _ = train_q11(train_loader, val_loader, best_params)
