@@ -119,8 +119,8 @@ def offline_evaluation(df_test: pd.DataFrame, config_str: str, tau: float = 0.5,
     print(f"         OFFLINE EVALUATION RESULTS       ")
     print(f"==========================================")
     print(f"CONFIG: {config_str}")
-    print(f"ESTIMATED QUANTILE-VALUE (QV_tau={tau}): {optimal_q:.4f}")
-    print(f"ESTIMATED SURVIVAL-VALUE (SV_psi):    {sv_psi:.4f}")
+    print(f"ESTIMATED QUANTILE-VALUE (QV_tau={tau}): {optimal_q:.6f}")
+    print(f"ESTIMATED SURVIVAL-VALUE (SV_psi):    {sv_psi:.6f}")
     print(f"==========================================\n")
     return optimal_q, sv_psi
 

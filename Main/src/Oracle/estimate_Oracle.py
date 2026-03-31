@@ -48,7 +48,7 @@ def train_policy_Oracle(n_train=2000, seed=42, K_folds=2, max_alt_iters=10, tau=
     
     f1, f2 = None, None
     for it in range(max_alt_iters):
-        print(f"--- Iter {it+1}/{max_alt_iters} (q={q_current:.4f}) ---")
+        print(f"--- Iter {it+1}/{max_alt_iters} (q={q_current:.6f}) ---")
         best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
         ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
         ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
@@ -66,7 +66,7 @@ def train_policy_Oracle(n_train=2000, seed=42, K_folds=2, max_alt_iters=10, tau=
             d2_new[d2_new==0]=1
             
             diff_ratio = 0.5 * (np.mean(d1_new != d1_pred) + np.mean(d2_new != d2_pred))
-            print(f"    -> Policy Action change ratio: {diff_ratio:.4f}")
+            print(f"    -> Policy Action change ratio: {diff_ratio:.6f}")
             
             d1_pred = d1_new
             d2_pred = d2_new

@@ -7,10 +7,10 @@ import torch
 import warnings
 warnings.filterwarnings("ignore")
 
-from src.data_generate import intervened_data_gen, dynamic_intervened_data_gen, origin_para_set, adjust_para_set_for_new_coding
-from src.prox_qtr_sl.estimate_prox_qtr_sl import train_policy_prox_qtr_sl
-from src.SRA.estimate_SRA import train_policy_SRA
-from src.Oracle.estimate_Oracle import train_policy_Oracle
+from Main.src.data_generate import dynamic_intervened_data_gen, intervened_data_gen, adjust_para_set_for_new_coding, origin_para_set
+from Main.src.prox_qtr_sl.estimate_prox_qtr_sl import train_policy_prox_qtr_sl
+from Main.src.SRA.estimate_SRA import train_policy_SRA
+from Main.src.Oracle.estimate_Oracle import train_policy_Oracle
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -96,9 +96,9 @@ def run_comparative_mc(args):
         
         # Debug Report Output for the repetition
         iter_log = (
-            f"   Perf  -> Prox: {results['Proximal']['true_perf'][-1]:.4f} | "
-            f"SRA: {results['SRA']['true_perf'][-1]:.4f} | "
-            f"Oracle: {results['Oracle']['true_perf'][-1]:.4f}"
+            f"   Perf  -> Prox: {results['Proximal']['true_perf'][-1]:.6f} | "
+            f"SRA: {results['SRA']['true_perf'][-1]:.6f} | "
+            f"Oracle: {results['Oracle']['true_perf'][-1]:.6f}"
         )
         print(iter_log)
         

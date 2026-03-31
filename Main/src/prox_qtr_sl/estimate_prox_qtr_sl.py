@@ -118,13 +118,13 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=10,
     # 初始 Inner Optimization -> q
     q_current = inner_optimization(df_train['Y2'], df_train['A1'], df_train['A2'], 
                                    d1_pred, d2_pred, q22_train_oof, tau=tau)
-    print(f"Initial Naive q: {q_current:.4f}")
+    print(f"Initial Naive q: {q_current:.6f}")
     
     f1, f2 = None, None
     best_sv = 0.0
     for it in range(max_alt_iters):
         print(f"\n--- Alternating Iteration {it+1}/{max_alt_iters} ---")
-        print(f"Fixing q = {q_current:.4f}, optimizing outer policies f1, f2 with Optuna...")
+        print(f"Fixing q = {q_current:.6f}, optimizing outer policies f1, f2 with Optuna...")
         
         # Outer Level
         best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
@@ -161,7 +161,7 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=10,
             d2_new[d2_new == 0] = 1
             
             diff_ratio = 0.5 * (np.mean(d1_new != d1_pred) + np.mean(d2_new != d2_pred))
-            print(f"    -> Policy Action change ratio: {diff_ratio:.4f}")
+            print(f"    -> Policy Action change ratio: {diff_ratio:.6f}")
             
             d1_pred = d1_new
             d2_pred = d2_new
@@ -169,7 +169,7 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=10,
         # Inner Level -> Update q
         new_q = inner_optimization(df_train['Y2'], df_train['A1'], df_train['A2'], 
                                    d1_pred, d2_pred, q22_train_oof, tau=tau)
-        print(f"Updated optimal q: {new_q:.4f} (Previous q: {q_current:.4f})")
+        print(f"Updated optimal q: {new_q:.6f} (Previous q: {q_current:.6f})")
         
         # 退出条件: 至少经过 1 轮完整更新，且 q 的变化极小同时策略几乎不再变化
         if it > 0 and (np.abs(new_q - q_current) < 1e-6) and (diff_ratio < 1e-4):
@@ -179,7 +179,7 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=10,
             
         q_current = new_q
         
-    print(f"\n✅ Training Completed! Final optimal q: {q_current:.4f}, Final SV_psi: {best_sv:.4f}")
+    print(f"\n✅ Training Completed! Final optimal q: {q_current:.6f}, Final SV_psi: {best_sv:.6f}")
     
     if save_models: # default: False
         save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed, df_train)
