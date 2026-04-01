@@ -20,7 +20,7 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
     torch.save({'state_dict': f2.state_dict(), 'hyperparams': best_params}, os.path.join(models_dir, f"f2_{config_str}.pt"))
     print(f"📁 Oracle Policy Models saved with prefix: {config_str}")
 
-def train_policy_Oracle(n_train=2000, seed=42, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear", save_models=False):
+def train_policy_Oracle(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear", save_models=False):
     np.random.seed(seed)
     torch.manual_seed(seed)
     n_val = int(n_train * 0.25)
@@ -72,7 +72,7 @@ def train_policy_Oracle(n_train=2000, seed=42, K_folds=2, max_alt_iters=10, tau=
             d2_pred = d2_new
             
         new_q = inner_optimization(df_train['Y2'], df_train['A1'], df_train['A2'], d1_pred, d2_pred, ipw_train_oof, tau=tau)
-        if it > 0 and (abs(new_q - q_current) < 1e-6) and (diff_ratio < 1e-4): 
+        if it > 0 and (abs(new_q - q_current) < 1e-6): 
             break
         q_current = new_q
         

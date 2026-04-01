@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument("--tau", type=float, default=0.5)
     parser.add_argument("--phi_type", type=int, default=1)
     parser.add_argument("--model_type", type=str, default="linear")
-    parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument("--seed", type=int, default=20026)
     parser.add_argument("--n_test", type=int, default=1000)
     args = parser.parse_args()
     

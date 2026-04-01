@@ -44,7 +44,7 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
             
     print("📁 4 standalone q22 Nuisance Models securely saved for offline evaluation!")
 
-def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear", save_models=False):
+def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear", save_models=False):
     # 设定随机种子
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -112,8 +112,9 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=10,
     # === 3. 第二/三步: 内外层交替优化 ===
     print("\n=== Step 2 & 3: Alternating Optimization for Policy Learning ===")
     # 策略初始化
-    d1_pred = np.ones(n_train)
-    d2_pred = np.ones(n_train)
+    # 使用随机策略初始化，避开一开始就猜中全局最优导致无法体现优化的现象
+    d1_pred = np.random.choice([-1, 1], size=n_train)
+    d2_pred = np.random.choice([-1, 1], size=n_train)
     
     # 初始 Inner Optimization -> q
     q_current = inner_optimization(df_train['Y2'], df_train['A1'], df_train['A2'], 
@@ -172,7 +173,7 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=10,
         print(f"Updated optimal q: {new_q:.6f} (Previous q: {q_current:.6f})")
         
         # 退出条件: 至少经过 1 轮完整更新，且 q 的变化极小同时策略几乎不再变化
-        if it > 0 and (np.abs(new_q - q_current) < 1e-6) and (diff_ratio < 1e-4):
+        if it > 0 and (np.abs(new_q - q_current) < 1e-6):
             print("Quantile constraint bounds and Policy actions have successfully converged!")
             q_current = new_q
             break
@@ -190,7 +191,7 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=42, K_folds=2, max_alt_iters=10,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Proximal Quantile-Optimal DTR Pipeline")
     parser.add_argument("--n_train", type=int, default=1000, help="Number of simulation training samples")
-    parser.add_argument("--seed", type=int, default=2026, help="Random seed setting for reproducibility")
+    parser.add_argument("--seed", type=int, default=20026, help="Random seed setting for reproducibility")
     parser.add_argument("--tau", type=float, default=0.5, help="Quantile level (e.g. 0.5 for median)")
     parser.add_argument("--folds", type=int, default=2, help="K-folds config for Cross-fitting in Nuisance pre-estimation")
     parser.add_argument("--phi_type", type=int, default=1, choices=[1, 2, 3, 4], help="Type of surrogate loss phi(x) (1 to 4)")

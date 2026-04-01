@@ -91,8 +91,8 @@ def train_outer_policies(train_loader: DataLoader, val_loader: DataLoader, param
         model_f1 = Policy_Linear(input_dim=1).to(device)
         model_f2 = Policy_Linear(input_dim=3).to(device)
     elif model_type == "nn":
-        model_f1 = Policy_NN(input_dim=1, hidden_dim=params.get('hidden_dim', 32), num_layers=params.get('num_layers', 2)).to(device)
-        model_f2 = Policy_NN(input_dim=3, hidden_dim=params.get('hidden_dim', 32), num_layers=params.get('num_layers', 2)).to(device)
+        model_f1 = Policy_NN(input_dim=1, hidden_dim=params.get('network_width', 32), num_layers=params.get('network_depth', 2)).to(device)
+        model_f2 = Policy_NN(input_dim=3, hidden_dim=params.get('network_width', 32), num_layers=params.get('network_depth', 2)).to(device)
     else:
         raise ValueError("model_type must be either 'linear' or 'nn'.")
     
@@ -174,13 +174,13 @@ def optimize_outer_hyperparams(df_train: pd.DataFrame, q22_train: np.ndarray, df
     
     def objective(trial):
         params = {
-            'lr': trial.suggest_float('lr', 1e-4, 5e-2, log=True),
-            'l2': trial.suggest_float('l2', 1e-6, 1e-3, log=True),
+            'lr': trial.suggest_float('lr', 1e-5, 1e-2, log=True),
+            'l2': trial.suggest_float('l2', 1e-8, 1e-6, log=True),
             'epochs': epochs
         }
         if model_type == "nn":
-            params['hidden_dim'] = trial.suggest_categorical('hidden_dim', [16, 32, 64])
-            params['num_layers'] = trial.suggest_int('num_layers', 1, 3)
+            params['network_width'] = trial.suggest_categorical('network_width', [32, 64, 128])
+            params['network_depth'] = trial.suggest_int('network_depth', 2, 4)
             
         _, _, best_val_loss = train_outer_policies(train_loader, val_loader, params, phi_type, model_type)
         # Optuna seeks to minimize objective, which matches our negative survival function
