@@ -126,6 +126,15 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=
     f1, f2 = None, None
     best_sv = 0.0
     
+    # 提前将验证不需要更新的张量放入目标设备，避免后续 SCL 迭代中几十次重复拷贝
+    device_compute = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    H1_train_tensor = torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1).to(device_compute)
+    H2_train_tensor = torch.cat([
+        torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1),
+        torch.tensor(df_train['Y1'].values, dtype=torch.float32).unsqueeze(1),
+        torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)
+    ], dim=1).to(device_compute)
+    
     for it in range(max_alt_iters):
         print(f"\n--- SCL Binary Search Iteration {it+1}/{max_alt_iters} ---")
         q_current = (l_bound + u_bound) / 2.0
@@ -147,15 +156,8 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=
         f1.eval()
         f2.eval()
         with torch.no_grad():
-            device_f1 = next(f1.parameters()).device
-            device_f2 = next(f2.parameters()).device
-            H1_train = torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1).to(device_f1)
-            H2_train = torch.cat([torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1),
-                                  torch.tensor(df_train['Y1'].values, dtype=torch.float32).unsqueeze(1),
-                                  torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)], dim=1).to(device_f2)
-                                  
-            f1_train_out = f1(H1_train).cpu().numpy().flatten()
-            f2_train_out = f2(H2_train).cpu().numpy().flatten()
+            f1_train_out = f1(H1_train_tensor).cpu().numpy().flatten()
+            f2_train_out = f2(H2_train_tensor).cpu().numpy().flatten()
             
             # 使用符号函数生成新策略指示器
             d1_new = np.sign(f1_train_out)

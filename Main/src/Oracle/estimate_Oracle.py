@@ -58,6 +58,14 @@ def train_policy_Oracle(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, t
     f1, f2 = None, None
     best_sv = 0.0
     
+    device_compute = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    H1_train_tensor = torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1).to(device_compute)
+    H2_train_tensor = torch.cat([
+        torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1),
+        torch.tensor(df_train['Y1'].values, dtype=torch.float32).unsqueeze(1),
+        torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)
+    ], dim=1).to(device_compute)
+    
     for it in range(max_alt_iters):
         q_current = (l_bound + u_bound) / 2.0
         print(f"--- Iter {it+1}/{max_alt_iters} Binary Search m (q) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}] ---")
@@ -68,13 +76,9 @@ def train_policy_Oracle(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, t
         f1.eval()
         f2.eval()
         with torch.no_grad():
-            H1 = torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1).to(next(f1.parameters()).device)
-            H2 = torch.cat([torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1),
-                            torch.tensor(df_train['Y1'].values, dtype=torch.float32).unsqueeze(1),
-                            torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)], dim=1).to(next(f2.parameters()).device)
-            d1_new = np.sign(f1(H1).cpu().numpy().flatten())
+            d1_new = np.sign(f1(H1_train_tensor).cpu().numpy().flatten())
             d1_new[d1_new==0]=1
-            d2_new = np.sign(f2(H2).cpu().numpy().flatten())
+            d2_new = np.sign(f2(H2_train_tensor).cpu().numpy().flatten())
             d2_new[d2_new==0]=1
             
         sv_val = np.mean((Y2_array > q_current) * ipw_train_oof * (d1_new == A1_array) * (d2_new == A2_array))
