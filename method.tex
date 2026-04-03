@@ -432,8 +432,8 @@ and the solution leads to the estimated regimes $\hat d_{n,1} = \text{sign}(\hat
             & \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \lambda_n(||f_1||_{n,2}+||f_2||_{n,2});
         \end{flalign*} \\
         $\hat{d}_{n,1} \leftarrow \text{sign}(\hat f_{n,1}^{(k)}), \: \hat{d}_{n,2} \leftarrow \text{sign}(\hat f_{n,2}^{(k)})$ \;
-        \If{$|\hat{SV}(\hat{d}_{n,1},\hat{d}_{n,2};m^{(k)}) - (1-\tau)| < \varepsilon_n$}{\textbf{break}\;}
-        \ElseIf{$\hat{SV}(\hat{d}_{n,1},\hat{d}_{n,2};m^{(k)}) - (1-\tau) > \varepsilon_n$}
+        \If{$|\hat{SV}(\hat{d}_{n,1},\hat{d}_{n,2};m^{(k)}) - (1-\tau)| \leq \varepsilon_n$}{\textbf{break}\;}
+        \ElseIf{$\hat{SV}(\hat{d}_{n,1},\hat{d}_{n,2};m^{(k)}) \geq (1-\tau)$}
         {$l^{(k+1)} \leftarrow m^{(k)}, \: u^{(k+1)}\leftarrow u^{(k)}$\;}
         \Else{$l^{(k+1)} \leftarrow l^{(k)}, \: u^{(k+1)}\leftarrow m^{(k)}$\;}
         \BlankLine
