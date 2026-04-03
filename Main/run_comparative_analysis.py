@@ -29,7 +29,7 @@ def parse_arguments():
     parser.add_argument("--phi_type", type=int, choices=[1, 2, 3, 4], default=1, help="Type of surrogate loss function")
     parser.add_argument("--model_type", type=str, choices=["linear", "nn"], default="linear", help="Class of policy function U_n")
     parser.add_argument("--k_folds", type=int, default=2, help="Number of folds for cross-fitting")
-    parser.add_argument("--max_alt_iters", type=int, default=10, help="Max iterations for alternating optimization")
+    parser.add_argument("--max_alt_iters", type=int, default=30, help="Max iterations for SCL optimization")
     
     return parser.parse_args()
 

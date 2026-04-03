@@ -7,7 +7,6 @@ from torch.utils.data import DataLoader
 
 from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
 from Main.src.prox_qtr_sl.step1_nuisance import estimate_nuisance, prepare_tensors
-from Main.src.prox_qtr_sl.step2_inner import inner_optimization
 from Main.src.prox_qtr_sl.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 
 import os
@@ -109,23 +108,28 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=
                     q22_val_preds[global_val_idx] += preds_val_part / K_folds
 
 
-    # === 3. 第二/三步: 内外层交替优化 ===
+    # === 3. 第二/三步: 内外层交替优化 (Sequential Classification Learning) ===
     print("\n=== Step 2 & 3: Alternating Optimization for Policy Learning ===")
-    # 策略初始化
-    # 使用随机策略初始化，避开一开始就猜中全局最优导致无法体现优化的现象
-    d1_pred = np.random.choice([-1, 1], size=n_train)
-    d2_pred = np.random.choice([-1, 1], size=n_train)
     
-    # 初始 Inner Optimization -> q
-    q_current = inner_optimization(df_train['Y2'], df_train['A1'], df_train['A2'], 
-                                   d1_pred, d2_pred, q22_train_oof, tau=tau)
-    print(f"Initial Naive q: {q_current:.6f}")
+    Y2_array = df_train['Y2'].values
+    A1_array = df_train['A1'].values
+    A2_array = df_train['A2'].values
     
+    l_bound = np.min(Y2_array)
+    u_bound = np.max(Y2_array)
+    epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
+    kappa_n = min(1e-4, np.std(Y2_array) / (6.0 * np.sqrt(n_train)))
+    
+    print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}")
+    
+    q_current = None
     f1, f2 = None, None
     best_sv = 0.0
+    
     for it in range(max_alt_iters):
-        print(f"\n--- Alternating Iteration {it+1}/{max_alt_iters} ---")
-        print(f"Fixing q = {q_current:.6f}, optimizing outer policies f1, f2 with Optuna...")
+        print(f"\n--- SCL Binary Search Iteration {it+1}/{max_alt_iters} ---")
+        q_current = (l_bound + u_bound) / 2.0
+        print(f"Testing binary boundary q_current (m) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}]")
         
         # Outer Level
         best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
@@ -139,7 +143,6 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=
         val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False)
         
         f1, f2, val_loss = train_outer_policies(train_loader, val_loader, best_params, phi_type=phi_type, model_type=model_type)
-        best_sv = -val_loss
         
         f1.eval()
         f2.eval()
@@ -161,26 +164,23 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=
             d2_new = np.sign(f2_train_out)
             d2_new[d2_new == 0] = 1
             
-            diff_ratio = 0.5 * (np.mean(d1_new != d1_pred) + np.mean(d2_new != d2_pred))
-            print(f"    -> Policy Action change ratio: {diff_ratio:.6f}")
-            
-            d1_pred = d1_new
-            d2_pred = d2_new
-            
-        # Inner Level -> Update q
-        new_q = inner_optimization(df_train['Y2'], df_train['A1'], df_train['A2'], 
-                                   d1_pred, d2_pred, q22_train_oof, tau=tau)
-        print(f"Updated optimal q: {new_q:.6f} (Previous q: {q_current:.6f})")
+        sv_val = np.mean((Y2_array > q_current) * q22_train_oof * (d1_new == A1_array) * (d2_new == A2_array))
+        best_sv = sv_val
+        print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
         
-        # 退出条件: 至少经过 1 轮完整更新，且 q 的变化极小同时策略几乎不再变化
-        if it > 0 and (np.abs(new_q - q_current) < 1e-6):
-            print("Quantile constraint bounds and Policy actions have successfully converged!")
-            q_current = new_q
+        if abs(sv_val - (1 - tau)) <= epsilon_n:
+            print(f"✅ SCL Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
             break
+        elif sv_val >= (1 - tau):
+            l_bound = q_current
+        else:
+            u_bound = q_current
             
-        q_current = new_q
+        if (u_bound - l_bound) <= kappa_n:
+            print(f"✅ SCL Converged by kappa bounded interval width: {u_bound - l_bound:.6f} <= {kappa_n:.6f}")
+            break
         
-    print(f"\n✅ Training Completed! Final optimal q: {q_current:.6f}, Final SV_psi: {best_sv:.6f}")
+    print(f"\n✅ Training Completed! Final optimal q: {q_current:.6f}, Estimated SV: {best_sv:.6f}")
     
     if save_models: # default: False
         save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed, df_train)

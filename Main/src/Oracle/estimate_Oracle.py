@@ -8,7 +8,6 @@ import os
 
 from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
 from Main.src.Oracle.step1_nuisance import estimate_nuisance
-from Main.src.Oracle.step2_inner import inner_optimization
 from Main.src.Oracle.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 
 def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed):
@@ -42,13 +41,26 @@ def train_policy_Oracle(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, t
         ipw_train_oof[df_train.iloc[oof_idx].index] = predict_weights_fn(df_oof)
         ipw_val_preds += predict_weights_fn(df_val) / K_folds
 
-    print("\n=== Oracle Step 2 & 3: Alternating Optimization ===")
-    d1_pred, d2_pred = np.ones(n_train), np.ones(n_train)
-    q_current = inner_optimization(df_train['Y2'], df_train['A1'], df_train['A2'], d1_pred, d2_pred, ipw_train_oof, tau=tau)
+    print("\n=== Oracle Step 2 & 3: Alternating Optimization (Sequential Classification Learning) ===")
     
+    Y2_array = df_train['Y2'].values
+    A1_array = df_train['A1'].values
+    A2_array = df_train['A2'].values
+    
+    l_bound = np.min(Y2_array)
+    u_bound = np.max(Y2_array)
+    epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
+    kappa_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
+    
+    print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}")
+    
+    q_current = None
     f1, f2 = None, None
+    best_sv = 0.0
+    
     for it in range(max_alt_iters):
-        print(f"--- Iter {it+1}/{max_alt_iters} (q={q_current:.6f}) ---")
+        q_current = (l_bound + u_bound) / 2.0
+        print(f"--- Iter {it+1}/{max_alt_iters} Binary Search m (q) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}] ---")
         best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
         ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
         ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
@@ -65,18 +77,23 @@ def train_policy_Oracle(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, t
             d2_new = np.sign(f2(H2).cpu().numpy().flatten())
             d2_new[d2_new==0]=1
             
-            diff_ratio = 0.5 * (np.mean(d1_new != d1_pred) + np.mean(d2_new != d2_pred))
-            print(f"    -> Policy Action change ratio: {diff_ratio:.6f}")
-            
-            d1_pred = d1_new
-            d2_pred = d2_new
-            
-        new_q = inner_optimization(df_train['Y2'], df_train['A1'], df_train['A2'], d1_pred, d2_pred, ipw_train_oof, tau=tau)
-        if it > 0 and (abs(new_q - q_current) < 1e-6): 
-            break
-        q_current = new_q
+        sv_val = np.mean((Y2_array > q_current) * ipw_train_oof * (d1_new == A1_array) * (d2_new == A2_array))
+        best_sv = sv_val
+        print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
         
+        if abs(sv_val - (1 - tau)) <= epsilon_n:
+            print(f"✅ Oracle SCL Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
+            break
+        elif sv_val >= (1 - tau):
+            l_bound = q_current
+        else:
+            u_bound = q_current
+            
+        if (u_bound - l_bound) <= kappa_n:
+            print(f"✅ Oracle SCL Converged by kappa width: {u_bound - l_bound:.6f} <= {kappa_n:.6f}")
+            break
+
     if save_models: 
         save_trained_models(f1, f2, best_p, n_train, tau, phi_type, model_type, seed)
 
-    return f1, f2, q_current, -val_loss
+    return f1, f2, q_current, best_sv
