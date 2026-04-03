@@ -8,6 +8,7 @@
 \usepackage{xcolor}
 \usepackage{MnSymbol} 
 \usepackage{float}
+\usepackage[boxruled,vlined,noline,]{algorithm2e}
 
 \RequirePackage[colorlinks,citecolor=blue,urlcolor=blue,hypertexnames=true]{hyperref}
 \usepackage{tikz}
@@ -260,33 +261,60 @@ It is natural to obtain an estimate of the target, i.e., the quantile-value func
 
 
 \section{Policy Learning}
-In this section, we propose a quantile-optimal DTR estimator smoothed by surrogate loss functions instead of indicator functions. 
-For simplicity, we only study the situation of $K=2$ and $A_k \in \{-1,1\}$ for each $k=1,2$ (in the setting of $A_k \in \{0,1\}$, we can use a map $A_k'=g(A_k) = 2A_k-1$ to reallocate treatments to the set of $\{-1,1\}$). The settings of the parameters are in line with section 3. 
-The process of solving the quantile-optimal treatment regime $d^*$ is known as a bi-level optimization problem that allows us to consider the following optimization framework:
+Now that we have already derived how to use the treatment bridge function to estimate quantile-value function from\eqref{est}, the next step is to learn the quantile-optimal regimes (policies) $\bar d_2^* = (d_1^*, d_2^*)$ in the policy space $\mathcal{D}$ that maximize the quantile-value function, which can be identified as
+\begin{align}
+    \bar d_2^* = (d_1^*, d_2^*) =&  \argmax_{(d_1,d_2) \in \mathcal{D}} Q_\tau(Y_2(d_1, d_2))    \notag\\
+     =& \argmax_{(d_1,d_2) \in \mathcal{D}} \Big\{\argmin_{q}\mathbb{E} \bigl[\rho_\tau(Y_{2}-q)\cdot q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2}) I(d_1(Y_{0})=A_1)I(d_2(\bar Y_{1},A_1)=A_2) \bigr]\Big\}.  \label{ident}
+\end{align}
+Solving the quantile-optimal treatment regime $(d_1^*,d_2^*)$ can be deemed as a bi-level optimization with the following two-level optimization:
 \begin{itemize}
     \item Inner level optimization: for a fixed $d=(d_1,d_2)$, first solve the quantile-value function to find the optimal quantile:
     \begin{align}
-    & Q_\tau(Y_2(d_1,d_2)) = \argmin\limits_{q} \mathbb{E}\big[\rho_\tau(Y_{2}(d_1,d_2) - q) \big] \label{inner} \\
-    \Longleftrightarrow \quad & \mathbb{E}\big[\tau-I\{Y_2(d_1,d_2) < Q_\tau(Y_2(d_1,d_2))\} \big]= 0 \notag
+    & Q_\tau(Y_2(d_1,d_2)) = \argmin\limits_{q} \mathbb{E}\big[\rho_\tau(Y_{2}(d_1,d_2) - q) \big] \label{inner}
     \end{align}
-    \item Outer level optimization: fixing $Q_\tau(Y_2(d_1,d_2))$, then find the quantile-optimal treatment regime  
+    \item Outer level optimization: fixing $Q_\tau(Y_2(d_1,d_2))$, then find the quantile-optimal treatment regimes  
     \begin{align}
     d^* = (d_1^*,d_2^*) = \argmax \limits_{(d_1,d_2)} Q_\tau(Y_2(d_1,d_2)).
     \label{outer}
     \end{align}
 \end{itemize}
 
-In general, we have three steps to do with policy learning.
-First, we need to pre-estimate the nuisance function -- treatment bridge function $\hat q_{22}(\bar Z_2,\bar Y_1, \bar A_2)$ according to \eqref{est}.
-Second, we do the inner level optimization to find the argmin quantile value $q$ when fixing the policies $d_1$ and $d_2$.
-Last, we do the outer level optimization by fixing $q$ and introducing a surrogate loss function 
-$\psi$ to find the optimal policies.
+For the inner level optimization in \eqref{inner}, the quantile-value function can be identified via PIPW \eqref{est} by 
+\begin{align}
+    &Q_\tau(Y_2(d_1,d_2)) = \argmin_{q}\mathbb{E} \bigl\{\rho_\tau(Y_{2}-q)\cdot q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2}) I(d_1(Y_{0})=A_1)I(d_2(\bar Y_{1},A_1)=A_2) \bigr\} \notag\\
+    \Longleftrightarrow \quad & \mathbb{E}\big[I\{Y_2 > Q_\tau(Y_2(d_1,d_2))\}\cdot q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2}) I(d_1(Y_{0})=A_1)I(d_2(\bar Y_{1},A_1)=A_2) \big]= 1-\tau. \label{ilo1}
+\end{align}
+The above derivation indicates that if we find the optimal quantile value $q^*$ that satisfies the equation \eqref{ilo1} under the fixed regimes $d_1,d_2$, i.e., 
+\begin{align}
+    \mathbb{E}\big[I\{Y_2 > q^*\}\cdot q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2}) I(d_1(Y_{0})=A_1)I(d_2(\bar Y_{1},A_1)=A_2) \big]= 1-\tau, \label{ilo2}
+\end{align}
+the optimal $q^*$ can be regarded as a function of polices $d_1,d_2$.
+In other words, equation \eqref{ilo2} establishs an implicit function of $q^*$ and $d_1,d_2$,
+which allows us to consider $q^*$ as a function of $d_1,d_2$, denoted as $q^*(d_1,d_2)$.
+
+Consequently, the outer level optimization can be simplified as solving
+\begin{align}
+    (d_1^{*},d_2^{*}) = \argmax_{(d_1,d_2)\in\mathcal{D}}q^*(d_1,d_2). \notag
+\end{align}
+Furthermore, we consider $q$ as a parameter since our goal is only to find the optimal $d_1,d_2$. 
+Denote the survival value function as
+$$
+SV(d_1,d_2;q) = \mathbb{E} \big[I(Y_2 > q)\cdot q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2}) \cdot  I(d_1(Y_0)=A_1)I(d_2(\bar Y_1, A_1)=A_2) \big].
+$$
+The goal of outer level optimization can be expressed as 
+\begin{align}
+    (d_1^{*},d_2^{*}) = \argmax_{(d_1,d_2)\in\mathcal{D}} SV(d_1,d_2;q^*).
+\end{align}
+
+In practice, we plan our policy learning in the following steps.
+First, we need to pre-estimate the nuisance function $\hat q_{22}(\bar Z_2,\bar Y_1, \bar A_2)$.
+Then, we alternately solve the inner level optimization and outer level optimization by an iterative process.
 
 
 \subsection{Pre-estimation of the treatment bridge function}
-Before handling the target loss function, we need to estimate the nuisance parameter of the (non-)parametric treatment bridge function $q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2})$.
-We adopt the DeepMMR method by (Zhang2025) to estimate it.
-Since they only provide an estimation method for single-stage, we reformulate it as a two-stage estimation method for estimating the treatment bridge function $q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2})$.
+Before estimating the policies, we first need to estimate the nuisance treatment bridge function $q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2})$, which also requires the estimation of $q_{11}$ according to assumption \ref{ass18}.
+Our method involves using neural networks to estimate the treatment bridge functions, which builds on the idea of the DeepMMR method proposed by (Zhang2025).
+Furthermore, we extended their method to a two-stage setting for estimating the treatment bridge function $q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2})$.
 
 Recalling the recursive definition of the treatment bridge function in assumption \ref{ass18}, we have the following conditional moment restrictions for $q_{11}$ and $q_{22}$:
 \begin{align}
@@ -309,32 +337,40 @@ Then, we can define the risk of estimating $q_{11}$ and $q_{22}$ as
 where $(\bar A_2', \bar W_2',\bar Z_2', \bar Y_2')$ is an independent copy of the random variables $(\bar A_2, \bar W_2,\bar Z_2, \bar Y_2)$.
 According to the risk minimization criteria, we can estimate $q_{11}$ and $q_{22}$ by minimizing the empirical risks as shown below:
 \begin{align}
-    & \hat q_{11}=\argmin_{q_{11}} \frac{1}{n^2}\sum_{i,j=1}^n (I(A_{1,i}=a_{1,i})q_{11,i}-1)(I(A_{1,j}=a_{1,j})q_{11,j}-1)\cdot k_{1,ij} + \lambda_1||q_{11}||_2^2, \\
-    & \hat q_{22}=\argmin_{q_{22}} \frac{1}{n^2}\sum_{i,j=1}^n (I(A_{2,i}=a_{1,i})q_{22,i}-\hat q_{11,i})(I(A_{2,j}=a_{2,j})q_{22,j}-\hat q_{11,j})\cdot k_{2,ij} + \lambda_2||q_{22}||_2^2,
+    & \hat q_{11}=\argmin_{q_{11}} \frac{1}{n^2}\sum_{i,j=1}^n (I(A_{1,i}=a_{1,i})q_{11,i}-1)(I(A_{1,j}=a_{1,j})q_{11,j}-1)\cdot k_{1,ij} + \lambda_1||q_{11}||_2^2, \label{q11hat}\\
+    & \hat q_{22}=\argmin_{q_{22}} \frac{1}{n^2}\sum_{i,j=1}^n (I(A_{2,i}=a_{1,i})q_{22,i}-\hat q_{11,i})(I(A_{2,j}=a_{2,j})q_{22,j}-\hat q_{11,j})\cdot k_{2,ij} + \lambda_2||q_{22}||_2^2, \label{q22hat}
 \end{align}
 where $q_{tt,i}=q_{tt}(\bar Z_{t,i}, \bar Y_{t-1,i}, \bar A_{t,i})$,  $k_{t,ij}=((\bar A_{t-1,i}, \bar W_{t,i},\bar Y_{t-1,i}),(\bar A_{t-1,j}, \bar W_{t,j},\bar Y_{t-1,j}))$ , and $\lambda_1, \lambda_2$ are the tuning parameters that control the $L_2-$penalty terms for $t=1,2$.
 In practice, we use neural networks to estimate the first $\hat q_{11}$ and then $\hat q_{22}$.
 
 
+
+
 \subsection{Inner Level Optimization}
-We now consider the optimization problem. In this section, we first address the inner level optimization in \eqref{inner}.
-Based on \eqref{est}, the quantile-value function can be estimated by
-\begin{align}
-   \hat Q_\tau(Y_2(d_1,d_2))= \argmin_{q} \frac{1}{n}\sum_{i=1}^n\Big\{\hat q_{22}(\bar Z_{2,i},\bar Y_{1,i},\bar A_{2,i})I(d_1(Y_{0,i})=A_{1,i})I(d_2(\bar Y_{1,i},A_{1，i})=A_{2,i})\cdot \rho_\tau(Y_{2,i}-q)  \Big\} ,
-\end{align}
-which can be solved by sorting methods or quantile regression for given $d_1$,$d_2$.
+Solving equation \eqref{ilo1} is deemed as a quantile regression problem, and can be solved by sorting or searching methods (e.g., Value Search Method, wang2018).
+However, such methods may lead to slow convergence, ineffectiveness and inconsistency (Xia2025). 
+To this end, motivated by the idea of Sequential Classification Learning (SCL) proposed by (Xia2025),  we adopt a binary search framework for learning the optimal quantile value.
+
+In practice, we initially find a bounded interval $(l,u)$ that is large enough to contain $q^*$, and let $m = \frac{l+u}{2}$. 
+Then, we compare $\max\limits_{d_1,d_2}SV(d_1,d_2;m)$ with $1-\tau$, and if
+\begin{itemize}
+    \item $\max\limits_{d_1,d_2}SV(d_1,d_2;m) = 1-\tau$: the optimal quantile $q^* = m$, and $(d_1^*,d_2^*) = \argmax\limits_{d_1,d_2}SV(d_1,d_2;q^*)$;
+    \item $\max\limits_{d_1,d_2}SV(d_1,d_2;m) > 1-\tau$: continue search in the interval $(m,u)$;
+    \item $\max\limits_{d_1,d_2}SV(d_1,d_2;m) < 1-\tau$: continue search in the interval $(l,m)$.
+\end{itemize}
+
 
 
 \subsection{Outer level optimization}
-Motivated by (\textbf{Laha2021}), we consider solving the origin optimization problem as a weighted classification problem using a surrogate loss to smooth the indicator function of $d$. 
-For a fixed $q$, consider an alternative form of targeted survival function 
+Motivated by (\textbf{Laha2021}), we consider solving the original optimization problem as a weighted classification problem using a surrogate loss to smooth the indicator function of $d$. 
+For a fixed $q$, consider an alternative form of the targeted survival function 
 \begin{align}
     &SV(f_1,f_2;q) = \mathbb{E} \big[I(Y_2 > q)\cdot q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2}) \cdot  I(A_1f_1(H_1)>0)I(A_2f_2(H_2)>0 \big] \\
     \Longleftrightarrow\quad & SV(d_1,d_2;q) = \mathbb{E} \big[I(Y_2 > q)\cdot q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2}) \cdot  I(d_1(H_1)=A_1)I(d_2(H_2)=A_2) \big],
 \end{align}
 where $H_1=\{Y_0\}, H_2=\{\bar Y_1(A_1)\} \subset \{\bar Y_1,A_1\}:= H_2^\dag$.
 \begin{rem}[]
-    It is essential to notice that the historical information set $H_t$ relies on the potential outcomes of previous stages under the proximal setting (Y.Gao, J.Zhang), which is different to the setting of no unmeasured confounder assumption (NUCA).
+    It is essential to notice that the historical information set $H_t$ relies on the potential outcomes of previous stages under the proximal setting (Y.Gao, J.Zhang), which is different from the setting of no unmeasured confounder assumption (NUCA).
     However, it is not intuitive to be the direct input parameters of treatment regime $d_t$. 
     In fact, the set $H_t=\{\bar Y_{t-1}(\bar A_{t-1})\}$ can be viewed as a random variable that contains the necessary information yielded by observed data $H_t^\dag =\{\bar Y_{t-1}, \bar A_{t-1}\}$. 
     The notation $d_t(H_t)$ implies the treatment regime $d_t$ is actually determined by the observed outcomes of previous stages $\bar Y_{t-1}$ and the practical treatments $\bar a_{t-1}$ which lead to these outcomes.
@@ -353,32 +389,7 @@ Also denote the ($\psi-$)optimal targeted survival function as
 \end{align*}
 where $\tilde f_1,\tilde f_2$ are extended valued functions that can take the value of $\pm\infty$ suggested by (\textbf{Laha2021}).
 Then it is direct to characterize $d_1^*(H_1)=sign(f_1^*(H_1)), d_2^*(H_2)=sign(f_2^*(H_2))$ and $\tilde d_1(H_1)=sign(\tilde f_1(H_1)), \tilde d_2(H_2)=sign(\tilde f_2(H_2))$.
-An additional assumption is required for smooth techniques in the following discussion:
-\begin{ass}[Positivity of treatment bridge function]
-    For $k=1,2$, there exists $\epsilon_k >0$ such that $q_{kk}(\cdot) > \epsilon_k >0$.
-    \label{ass21}
-\end{ass}
-And the following lemma from (\textbf{Laha2021}) is helpful to construct a surrogate loss function: 
-\begin{cond}[\textbf{Condition 2} in \textbf{Laha2021}]
-        $\phi$ is a strictly increasing function such that
-        \begin{enumerate}  
-            \item $\forall x \in \mathbb{R}, \phi(x) > 0$.
-            \item $\forall x \in \mathbb{R}, \phi(x)+\phi(-x)=C_\phi$, where $C_\phi >0$ is a constant.
-            \item $\lim\limits_{x\to\infty} \phi(x)=C_\phi$, and $\lim\limits_{x\to-\infty}\phi(x)=0$.
-        \end{enumerate}
-        \label{cond2laha}
-\end{cond}
-
-It is essential to prove the following Fisher consistency:
-\begin{thm}[Fisher consistency]
-    Suppose assumptions \ref{ass10}-\ref{ass14}, \ref{ass16} and \ref{ass18} hold, then for a fixed q, \\
-    (a) For any $\{f_{1n},f_{2n}\}_{n\>1} \in \mathcal{F}$ that satisfies  $SV_\psi(f_{1n}, f_{2n};q) \to SV_\psi^*$ also satisfies $SV(f_{1n},f_{2n};q) \rightarrow SV^*$; \\
-    (b) (regret bound restriction) Also suppose assumption \ref{ass21} holds and $\psi(x,y)=\phi(x)\phi(y)$ satisfies condition \ref{cond2laha}, then  $SV^* - SV(f_1,f_2;q) \leq {(SV_\psi^* - SV_\psi(f_1, f_2;q))}/{(C_\phi^2/4)}$, for constant $C_\phi$ that satisfies condition \ref{cond2laha}.
-    \label{fishercon}
-\end{thm}
-     
-Suggested by \textbf{(Laha2021)}, now we can utilize a specific surrogate loss $\psi(x,y) = \phi(x)\phi(y)$, in which 
-$\phi(x)$ can be 
+There are some specific choice of surrogate loss $\psi(x,y) = \phi(x)\phi(y)$ offered by (Laha2021):
 \begin{itemize}
     \item $\phi(x)=1+ \frac{2}{\pi}\arctan{(\frac{\pi x}{2})}$;
     \item $\phi(x) = 1 + \frac{x}{1+|x|}$;
@@ -386,33 +397,68 @@ $\phi(x)$ can be
     \item $\phi(x) = 1+ \tanh(x)$.
 \end{itemize}
 In practical, due to the restriction of function class $\mathcal{F}$, we actually optimize the target $\hat{SV}_\psi(f_1,f_2;q)$ over a nested class $\mathcal{U}_{1}\subset \cdots \subset\mathcal{U}_{n}\subset\mathcal{F}$, where $\mathcal{U}_{t}=(\mathcal{U}_{1t},\mathcal{U}_{2t})$ such that $f_{1} \in \mathcal{U}_{1t}$ and $f_{2} \in \mathcal{U}_{2t}$ for $t=1,\dots,n$.
-We also apply the cross-fitting technique to remove the bias from estimating the nuisance function $\hat q_{22}$. For simplicity, we denote $q_{22}(\bar Z_2, \bar Y_1, \bar A_2)$ by $q_{22}$.
+We also introduce a regularity term with $L_2$-penalty to avoid overfitting, which is controlled by the hyperparameter $\lambda_n$.
 
-In addition, we also implement the cross-fitting method to estimate the bridge function $q$, according to the following procedure:
-\begin{enumerate}
-    \item we randomly split data $\mathcal{O}$ into $K$ non-intersecting folds, denoted as $I_1, \dots, I_K$ and $\bigcup_{k=1}^K I_k = \mathcal{O}$.
-    \item For each $k=1,\ldots,K$, use the data $I^{(-k)}:=\mathcal{O}\textbackslash I_k$ to estimate (train) the outcome confounding bridge function $\hat q_{22}^{(-k)}$ and calculate the value of $\hat q_{22}^{(-k)}$ on $I_k$.
-    \item For each $k=1,\ldots,K$, on the $k-$th fold $I_k$, we obtain 
-    \begin{align*}
-        \hat{SV}_{\psi,-k}(f_1,f_2;q) := \mathbb{P}_{n,k} \big[I(Y_2>q)\hat q_{22}^{(-k)}\psi(A_1f_1(H_1),A_2f_2(H_2)) \big],
-    \end{align*}
-    where $\mathbb{P}_{n,k}$ denotes the empirical average over the $k-$th fold.
-    Then we can define the ($k-$average) empirical $\psi-$survival value function as 
-    \begin{align*}
-        \hat{SV}_\psi(f_1,f_2;q) = \frac{1}{K}\sum_{k=1}^K \hat SV_{\psi,-k}(f_1,f_2;q) = \frac{1}{K} \sum_{k=1}^K \mathbb{P}_{n,k} \big[I(Y_2>q)\hat q_{22}^{(-k)}\psi(A_1f_1(H_1),A_2f_2(H_2)) \big],
-    \end{align*}
-\end{enumerate}
-
-Under these settings, the ultimate learning goal is to find $(\hat f_{n,1}, \hat f_{n,2})$ such that 
+Under these settings, the learning goal of outer level optimization is to find $(\hat f_{n,1}, \hat f_{n,2})$ such that 
 \begin{align}
-        (\hat f_{n,1},\hat f_{n,2}) =& \argmax_{(f_1,f_2) \in \mathcal{U}_n}\hat{SV}_\psi(f_1,f_2;q) \notag\\
-        =& \argmax_{(f_1,f_2) \in \mathcal{U}_n}\frac{1}{K} \sum_{k=1}^K \mathbb{P}_{n,k} \big[I(Y_2>q)\hat q_{22}^{(-k)}\psi(A_1f_1(H_1),A_2f_2(H_2)) \big],
+        (\hat f_{n,1},\hat f_{n,2})
+        = \argmax_{(f_1,f_2) \in \mathcal{U}_n}\frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>q) \cdot \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \lambda_n(||f_1||_{n,2}+||f_2||_{n,2}) \label{ole1}
 \end{align}
 and the solution leads to the estimated regimes $\hat d_{n,1} = \text{sign}(\hat f_{n,1})$ and $\hat d_{n,2} = \text{sign}(\hat f_{n,2})$.
 
 
 
+
+
+\subsection{Learning Algorithm}
+
+\begin{algorithm}[htb]
+    \caption{Quantile-Optimal DTR Estimation by Prox\_qtr\_sl}
+    \SetKwInOut{Input}{Input}
+    \SetKwInOut{Output}{Output}
+    \SetKwIF{If}{ElseIf}{Else}{if}{:}{elif}{else:}{}
+
+    \Input{Observed data $\{\bar Y_{2,i},\bar Z_{2,i},\bar A_{2,i}, \bar W_{2,i}\}^n_{i=1}$, quantile level $\tau$, initial interval lower bound $l^{(0)}$ and upper bound $u^{(0)}$, tolerance threshold $\varepsilon_n, \kappa_n$}
+    \Output{Estimated optimal policies and optimal quantile value}
+    
+    \BlankLine
+    Estimate nuisance treatment bridge function $\hat{q}_{22}(\bar Z_2,\bar Y_1, \bar A_2)$ by \eqref{q11hat} and \eqref{q22hat}\;
+    \For{$k=1,2,\cdots,$}
+    {
+        $m^{(k)} \leftarrow (l^{(k)} + u^{(k)})/2$ \;
+        Solve 
+        \begin{flalign*}
+            (\hat f_{n,1}^{(k)},\hat f_{n,2}^{(k)}) = &\argmax_{(f_1,f_2) \in \mathcal{U}_n}\frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>m^{(k)}) \cdot \\ 
+            & \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \lambda_n(||f_1||_{n,2}+||f_2||_{n,2});
+        \end{flalign*} \\
+        $\hat{d}_{n,1} \leftarrow \text{sign}(\hat f_{n,1}^{(k)}), \: \hat{d}_{n,2} \leftarrow \text{sign}(\hat f_{n,2}^{(k)})$ \;
+        \If{$|\hat{SV}(\hat{d}_{n,1},\hat{d}_{n,2};m^{(k)}) - (1-\tau)| < \varepsilon_n$}{\textbf{break}\;}
+        \ElseIf{$\hat{SV}(\hat{d}_{n,1},\hat{d}_{n,2};m^{(k)}) - (1-\tau) > \varepsilon_n$}
+        {$l^{(k+1)} \leftarrow m^{(k)}, \: u^{(k+1)}\leftarrow u^{(k)}$\;}
+        \Else{$l^{(k+1)} \leftarrow l^{(k)}, \: u^{(k+1)}\leftarrow m^{(k)}$\;}
+        \BlankLine
+        \If{$u^{(k)}-l^{(k)} \leq \kappa_n$}{\textbf{break}\;}
+    }
+    \Return $\{(\hat{d}_{n,1},\hat{d}_{n,2}), m^{(k)}\}$\;
+    \label{alg1}
+\end{algorithm}
+
+In this section, we summarize the complete learning process of our method, named Prox\_qtr\_sl, to estimate the optimal policies $(d_1^*,d_2^*)$ in the algorithm \ref{alg1}. 
+The chosen values of some hyperparameters are as follows:
+\begin{itemize}
+    \item lower bound of initial interval $l^{(0)}$: $\min\limits_{i}{Y_{2,i}}$
+    \item upper bound of initial interval $u^{(0)}$: $\max\limits_{i}{Y_{2,i}}$
+    \item tolerance threshold $\varepsilon_n$: $0.5/\sqrt{n}$
+    \item tolerance threshold $\kappa_n$: $\text{sd}(Y_2)/(6\sqrt{n})$, where $\text{sd}(Y_2)$ is the sample standard deviation of outcome variable $Y_2$.
+\end{itemize}
+
+
+
+
+
 \section{Simulation}
+For simplicity, we only study the situation of $K=2$ and $A_k \in \{-1,1\}$ for each $k=1,2$ (in the setting of $A_k \in \{0,1\}$, we can use a map $A_k'=g(A_k) = 2A_k-1$ to reallocate treatments to the set of $\{-1,1\}$).
+
 \subsection{Data generation}
 Similar to (Ying2023), we generate a two-stage longitudinal data set of 11 variables: $(Y_0,U_0,A_1,Z_1,W_1,Y_1,U_1,A_2,W_2,Z_2,Y_2)$. 
 However, we let $A_1,A_2 \in \{-1,1\}$ for better compatibility of classification learning.
@@ -505,13 +551,9 @@ Finally, the outcome variable $Y_2$ is generated by
         \item standard deviation of above mean 
         \item mean of estimated quantile value estimated by the model (defined as $\hat V(\hat {\bar d}_2)$)
     \end{itemize}
+    $$ \text{Estimation Error} = \frac{1}{B} \sum_{i=1}^B \left| V(\hat{\bar{d}}_2^{(i)}) - \hat{V}(\hat{\bar{d}}_2^{(i)}) \right| $$
     
 \end{itemize}
-
-
-
-
-
 
 
 
