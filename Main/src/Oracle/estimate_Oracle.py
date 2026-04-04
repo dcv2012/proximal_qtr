@@ -4,6 +4,7 @@ from sklearn.model_selection import KFold, train_test_split
 import argparse
 import torch
 from torch.utils.data import DataLoader
+import scipy.stats as stats
 import os
 
 from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
@@ -49,10 +50,11 @@ def train_policy_Oracle(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, t
     
     l_bound = np.min(Y2_array)
     u_bound = np.max(Y2_array)
-    epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
-    kappa_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
+    epsilon_n = 0.5 / np.sqrt(n_train)
+    kappa_n = np.std(Y2_array) / (6 * np.sqrt(n_train))
+    hn = 0.2 / np.log(n_train)
     
-    print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}")
+    print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}, hn: {hn:.6f}")
     
     q_current = None
     f1, f2 = None, None
@@ -76,12 +78,13 @@ def train_policy_Oracle(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, t
         f1.eval()
         f2.eval()
         with torch.no_grad():
-            d1_new = np.sign(f1(H1_train_tensor).cpu().numpy().flatten())
-            d1_new[d1_new==0]=1
-            d2_new = np.sign(f2(H2_train_tensor).cpu().numpy().flatten())
-            d2_new[d2_new==0]=1
+            f1_train_out = f1(H1_train_tensor).cpu().numpy().flatten()
+            f2_train_out = f2(H2_train_tensor).cpu().numpy().flatten()
+
+        phi1 = stats.norm.cdf((A1_array * f1_train_out) / hn)
+        phi2 = stats.norm.cdf((A2_array * f2_train_out) / hn)
             
-        sv_val = np.mean((Y2_array > q_current) * ipw_train_oof * (d1_new == A1_array) * (d2_new == A2_array))
+        sv_val = np.mean((Y2_array > q_current) * ipw_train_oof * phi1 * phi2)
         best_sv = sv_val
         print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
         

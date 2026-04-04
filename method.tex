@@ -418,7 +418,7 @@ and the solution leads to the estimated regimes $\hat d_{n,1} = \text{sign}(\hat
     \SetKwInOut{Output}{Output}
     \SetKwIF{If}{ElseIf}{Else}{if}{:}{elif}{else:}{}
 
-    \Input{Observed data $\{\bar Y_{2,i},\bar Z_{2,i},\bar A_{2,i}, \bar W_{2,i}\}^n_{i=1}$, quantile level $\tau$, initial interval lower bound $l^{(0)}$ and upper bound $u^{(0)}$, tolerance threshold $\varepsilon_n, \kappa_n$}
+    \Input{Observed data $\{\bar Y_{2,i},\bar Z_{2,i},\bar A_{2,i}, \bar W_{2,i}\}^n_{i=1}$, quantile level $\tau$, initial interval lower bound $l^{(0)}$ and upper bound $u^{(0)}$, tolerance threshold $\varepsilon_n, \kappa_n$, bandwidth $h_n$}
     \Output{Estimated optimal policies and optimal quantile value}
     
     \BlankLine
@@ -428,29 +428,36 @@ and the solution leads to the estimated regimes $\hat d_{n,1} = \text{sign}(\hat
         $m^{(k)} \leftarrow (l^{(k)} + u^{(k)})/2$ \;
         Solve 
         \begin{flalign*}
-            (\hat f_{n,1}^{(k)},\hat f_{n,2}^{(k)}) = &\argmax_{(f_1,f_2) \in \mathcal{U}_n}\frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>m^{(k)}) \cdot \\ 
-            & \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \lambda_n(||f_1||_{n,2}+||f_2||_{n,2});
+            (\hat f_{n,1}^{(k)},\hat f_{n,2}^{(k)}) = &\argmax_{(f_1,f_2) \in \mathcal{U}_n}\frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>m^{(k)}) \cdot  
+            \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \\&\lambda_n(||f_1||_{n,2}+||f_2||_{n,2});
         \end{flalign*} \\
-        $\hat{d}_{n,1} \leftarrow \text{sign}(\hat f_{n,1}^{(k)}), \: \hat{d}_{n,2} \leftarrow \text{sign}(\hat f_{n,2}^{(k)})$ \;
-        \If{$|\hat{SV}(\hat{d}_{n,1},\hat{d}_{n,2};m^{(k)}) - (1-\tau)| \leq \varepsilon_n$}{\textbf{break}\;}
-        \ElseIf{$\hat{SV}(\hat{d}_{n,1},\hat{d}_{n,2};m^{(k)}) \geq (1-\tau)$}
+        \If{$|\hat{SV}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};m^{(k)};{h_n}) - (1-\tau)| \leq \varepsilon_n$}{\textbf{break}\;}
+        \ElseIf{$\hat{SV}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};m^{(k)};{h_n}) \geq (1-\tau)$}
         {$l^{(k+1)} \leftarrow m^{(k)}, \: u^{(k+1)}\leftarrow u^{(k)}$\;}
         \Else{$l^{(k+1)} \leftarrow l^{(k)}, \: u^{(k+1)}\leftarrow m^{(k)}$\;}
         \BlankLine
         \If{$u^{(k)}-l^{(k)} \leq \kappa_n$}{\textbf{break}\;}
     }
+    $\hat{d}_{n,1} \leftarrow \text{sign}(\hat f_{n,1}^{(k)}), \: \hat{d}_{n,2} \leftarrow \text{sign}(\hat f_{n,2}^{(k)})$ \;
     \Return $\{(\hat{d}_{n,1},\hat{d}_{n,2}), m^{(k)}\}$\;
     \label{alg1}
 \end{algorithm}
 
-In this section, we summarize the complete learning process of our method, named Prox\_qtr\_sl, to estimate the optimal policies $(d_1^*,d_2^*)$ in the algorithm \ref{alg1}. 
+In this section, we summarize the complete learning process of our method, Prox\_qtr\_sl, for estimating the optimal policies $(d_1^*, d_2^*)$ in Algorithm \ref{alg1}. $\hat{SV}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};m^{(k)};{h_n})$ is defined as
+\begin{align}
+    \hat{SV}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};m^{(k)};{h_n}) = \frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>m^{(k)}) \cdot \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \Phi\{A_{1,i}f_1(H_{1,i})/h_n\}\Phi\{A_{2,i}f_2(H_{2,i})/h_n\} \big], \notag
+\end{align}
+where $\Phi(\cdot)$ denotes the distribution function of the standard normal distribution, and $h_n$ is the bandwidth hyperparameter.
+
 The chosen values of some hyperparameters are as follows:
 \begin{itemize}
-    \item lower bound of initial interval $l^{(0)}$: $\min\limits_{i}{Y_{2,i}}$
-    \item upper bound of initial interval $u^{(0)}$: $\max\limits_{i}{Y_{2,i}}$
-    \item tolerance threshold $\varepsilon_n$: $0.5/\sqrt{n}$
+    \item lower bound of initial interval $l^{(0)}$: $\min\limits_{i}{Y_{2,i}}$,
+    \item upper bound of initial interval $u^{(0)}$: $\max\limits_{i}{Y_{2,i}}$,
+    \item bandwidth $h_n$:  $0.2/\log n$,
+    \item tolerance threshold $\varepsilon_n$: $0.5/\sqrt{n}$,
     \item tolerance threshold $\kappa_n$: $\text{sd}(Y_2)/(6\sqrt{n})$, where $\text{sd}(Y_2)$ is the sample standard deviation of outcome variable $Y_2$.
 \end{itemize}
+
 
 
 
