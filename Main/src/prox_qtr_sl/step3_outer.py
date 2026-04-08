@@ -96,9 +96,9 @@ def train_outer_policies(train_loader: DataLoader, val_loader: DataLoader, param
     else:
         raise ValueError("model_type must be either 'linear' or 'nn'.")
     
-    # 联合优化两个策略的参数
-    optimizer = optim.AdamW(list(model_f1.parameters()) + list(model_f2.parameters()), 
-                            lr=params['lr'], weight_decay=params['l2'])
+    # 分离优化器以支持坐标下降 (Coordinate Descent)
+    optimizer_f1 = optim.AdamW(model_f1.parameters(), lr=params['lr'], weight_decay=params['l2'])
+    optimizer_f2 = optim.AdamW(model_f2.parameters(), lr=params['lr'], weight_decay=params['l2'])
                            
     best_val_loss = float('inf')
     best_f1_state = None
@@ -115,19 +115,29 @@ def train_outer_policies(train_loader: DataLoader, val_loader: DataLoader, param
         for batch in train_loader:
             b_H1, b_H2, b_A1, b_A2, b_I, b_q22 = [t.to(device) for t in batch]
             
-            optimizer.zero_grad()
-            f1_pred = model_f1(b_H1)
-            f2_pred = model_f2(b_H2)
+            # --- 坐标下降 Step 1: 更新 f1 (冻结 f2) ---
+            optimizer_f1.zero_grad()
+            f1_curr = model_f1(b_H1)
+            with torch.no_grad():
+                f2_fixed = model_f2(b_H2)
             
-            psi_val = psi(b_A1 * f1_pred, b_A2 * f2_pred, phi_type)
-            
-            # \hat{SV}_\psi = mean( I(Y2 > q) * q22 * \psi(...) )
-            objective = torch.mean(b_I * b_q22 * psi_val)
-            
-            # 由于要化为最小化问题，因此 loss 是 objective 的相反数
-            loss = -objective 
-            loss.backward()
-            optimizer.step()
+            psi_val_1 = psi(b_A1 * f1_curr, b_A2 * f2_fixed, phi_type)
+            loss_f1 = -torch.mean(b_I * b_q22 * psi_val_1)
+            loss_f1.backward()
+            # torch.nn.utils.clip_grad_norm_(model_f1.parameters(), max_norm=1.0)
+            optimizer_f1.step()
+
+            # --- 坐标下降 Step 2: 更新 f2 (冻结 f1) ---
+            optimizer_f2.zero_grad()
+            f2_curr = model_f2(b_H2)
+            with torch.no_grad():
+                f1_fixed = model_f1(b_H1)
+                
+            psi_val_2 = psi(b_A1 * f1_fixed, b_A2 * f2_curr, phi_type)
+            loss_f2 = -torch.mean(b_I * b_q22 * psi_val_2)
+            loss_f2.backward()
+            # torch.nn.utils.clip_grad_norm_(model_f2.parameters(), max_norm=1.0)
+            optimizer_f2.step()
             
         # Validation Loop
         model_f1.eval()

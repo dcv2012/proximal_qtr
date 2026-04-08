@@ -189,7 +189,7 @@ def optimize_hyperparams(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, 
             'network_depth': trial.suggest_int('network_depth', 2, 4),
             'dropout_prob': trial.suggest_float('dropout_prob', 0.1, 0.5),
             'lr': trial.suggest_float('lr', 1e-5, 1e-2, log=True),
-            'l2': trial.suggest_float('l2', 1e-5, 1e-2, log=True),
+            'l2': trial.suggest_float('l2', 1e-4, 1e-2, log=True),
             'epochs': 200
         }
         
