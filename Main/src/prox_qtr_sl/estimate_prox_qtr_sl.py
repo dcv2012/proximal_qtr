@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 import scipy.stats as stats
 
-from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
+
 from Main.src.prox_qtr_sl.step1_nuisance import estimate_nuisance, prepare_tensors
 from Main.src.prox_qtr_sl.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 
@@ -44,10 +44,23 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
             
     print("📁 4 standalone q22 Nuisance Models securely saved for offline evaluation!")
 
-def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear", save_models=False):
-    # 设定随机种子
+def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2"):
+    """
+    运行基于 Proximal QTR (Sequential Classification) 的两阶段策略学习全流程。
+    支持自动切换 S1 (data_generate) / S2 (data_generate_new) 数据集来源。
+    """
+    
+    if dgp == "S1":
+        from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
+    else:
+        from Main.src.data_generate_new import data_gen, adjust_para_set_for_new_coding, origin_para_set
+
+    # 为了复现稳定性，统一设置随机种子
     np.random.seed(seed)
     torch.manual_seed(seed)
+
+    print("\n" + "="*50)
+    print(f"🚀 Starting Proximal QTR Policy Learning ({dgp})")
     
     # 移除外界对于验证集大小的硬编码输入，直接绑定为训练集比例的0.25倍
     n_val = int(n_train * 0.25)

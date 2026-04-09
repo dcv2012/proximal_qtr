@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 import scipy.stats as stats
 import os
 
-from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
+
 from Main.src.Oracle.step1_nuisance import estimate_nuisance
 from Main.src.Oracle.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 
@@ -20,17 +20,33 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
     torch.save({'state_dict': f2.state_dict(), 'hyperparams': best_params}, os.path.join(models_dir, f"f2_{config_str}.pt"))
     print(f"📁 Oracle Policy Models saved with prefix: {config_str}")
 
-def train_policy_Oracle(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear", save_models=False):
+def train_policy_Oracle(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2"):
+    """
+    运行基于 Oracle 的全观察（含U）环境策略学习。
+    """
+    
+    if dgp == "S1":
+        from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
+    else:
+        from Main.src.data_generate_new import data_gen, adjust_para_set_for_new_coding, origin_para_set
+
+    # 为了复现稳定性，统一设置随机种子
     np.random.seed(seed)
     torch.manual_seed(seed)
+
+    print("\n" + "="*50)
+    print(f"🚀 Starting Oracle Policy Learning ({dgp})")
+    
     n_val = int(n_train * 0.25)
     params_dgp = adjust_para_set_for_new_coding(origin_para_set)
     df_train = data_gen(n_train, params_dgp)
     df_val = data_gen(n_val, params_dgp)
     
     print("\n=== Oracle Step 1: Estimating Propensity Weights (Logistic Regression - Oracle Features) ===")
+    
     ipw_train_oof = np.zeros(len(df_train))
     ipw_val_preds = np.zeros(len(df_val))
+    
     kf = KFold(n_splits=K_folds, shuffle=True, random_state=seed)
     
     for fold, (train_idx, oof_idx) in enumerate(kf.split(df_train)):

@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 import scipy.stats as stats
 import os
 
-from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
+
 from Main.src.SRA.step1_nuisance import estimate_nuisance
 from Main.src.SRA.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 
@@ -20,9 +20,22 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
     torch.save({'state_dict': f2.state_dict(), 'hyperparams': best_params}, os.path.join(models_dir, f"f2_{config_str}.pt"))
     print(f"📁 SRA Policy Models saved with prefix: {config_str}")
 
-def train_policy_SRA(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear", save_models=False):
+def train_policy_SRA(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2"):
+    """
+    运行基于 SRA (Sequential Randomization Assumption) 的策略学习。
+    """
+    
+    if dgp == "S1":
+        from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
+    else:
+        from Main.src.data_generate_new import data_gen, adjust_para_set_for_new_coding, origin_para_set
+
+    # 为了复现稳定性，统一设置随机种子
     np.random.seed(seed)
     torch.manual_seed(seed)
+
+    print("\n" + "="*50)
+    print(f"🚀 Starting SRA Policy Learning ({dgp})")
     n_val = int(n_train * 0.25)
     params_dgp = adjust_para_set_for_new_coding(origin_para_set)
     df_train = data_gen(n_train, params_dgp)

@@ -41,6 +41,14 @@ class EarlyStopping:
             self.counter = 0
 
 
+def extract_proxy(df: pd.DataFrame, prefix: str) -> torch.Tensor:
+    """自动适配一维或多维代理变量的新旧DGP"""
+    if prefix in df.columns:
+        return torch.tensor(df[prefix].values, dtype=torch.float32).unsqueeze(1)
+    cols = [c for c in df.columns if c.startswith(prefix)]
+    cols.sort()
+    return torch.tensor(df[cols].values, dtype=torch.float32)
+
 def prepare_tensors(df: pd.DataFrame, a1: int, a2: int) -> TensorDataset:
     """
     仅筛选 A1 == a1 的数据，避免不必要的网络结构训练。
@@ -49,16 +57,17 @@ def prepare_tensors(df: pd.DataFrame, a1: int, a2: int) -> TensorDataset:
     df_filtered = df[df['A1'] == a1].copy()
     
     Y0 = torch.tensor(df_filtered['Y0'].values, dtype=torch.float32).unsqueeze(1)
-    Z1 = torch.tensor(df_filtered['Z1'].values, dtype=torch.float32).unsqueeze(1)
-    W1 = torch.tensor(df_filtered['W1'].values, dtype=torch.float32).unsqueeze(1)
+    Y1 = torch.tensor(df_filtered['Y1'].values, dtype=torch.float32).unsqueeze(1)
+    
+    # 动态支持 Z1, W1, Z2, W2 的高维扩展
+    Z1 = extract_proxy(df_filtered, 'Z1')
+    W1 = extract_proxy(df_filtered, 'W1')
+    Z2 = extract_proxy(df_filtered, 'Z2')
+    W2 = extract_proxy(df_filtered, 'W2')
     
     # 因为 A1 已经被筛选成了常数, 处理 tt1(目标指示器) 时实际上始终是 1。
     # 这里保持逻辑，对于 q11: I(A1=a1)
     tt1 = torch.tensor((df_filtered['A1'] == a1).values, dtype=torch.float32).unsqueeze(1)
-    
-    Y1 = torch.tensor(df_filtered['Y1'].values, dtype=torch.float32).unsqueeze(1)
-    Z2 = torch.tensor(df_filtered['Z2'].values, dtype=torch.float32).unsqueeze(1)
-    W2 = torch.tensor(df_filtered['W2'].values, dtype=torch.float32).unsqueeze(1)
     
     # tt2: I(A2=a2)
     tt2 = torch.tensor((df_filtered['A2'] == a2).values, dtype=torch.float32).unsqueeze(1)
@@ -67,7 +76,10 @@ def prepare_tensors(df: pd.DataFrame, a1: int, a2: int) -> TensorDataset:
 
 
 def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str, Any]) -> Tuple[nn.Module, float]:
-    input_dim = 2 # Z1 (1), Y0 (1)
+    # 动态抓取维度：Z1_dim + Y0_dim
+    Z1_peek, Y0_peek, _, _, _, _, _, _ = next(iter(train_loader))
+    input_dim = Z1_peek.shape[1] + Y0_peek.shape[1]
+    
     model = MLP_for_MMR(input_dim, params).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=params['lr'], weight_decay=params['l2'])
     
@@ -114,7 +126,10 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
     return model, best_val_loss
 
 def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Module, params: Dict[str, Any]) -> Tuple[nn.Module, float]:
-    input_dim = 4 # Z1 (1), Z2 (1), Y0 (1), Y1 (1)
+    # 动态抓取维度：Z1_dim + Z2_dim + Y0_dim + Y1_dim
+    Z1_peek, Y0_peek, _, _, Z2_peek, Y1_peek, _, _ = next(iter(train_loader))
+    input_dim = Z1_peek.shape[1] + Z2_peek.shape[1] + Y0_peek.shape[1] + Y1_peek.shape[1]
+    
     model = MLP_for_MMR(input_dim, params).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=params['lr'], weight_decay=params['l2'])
     
@@ -239,8 +254,8 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2:
     # 返回一个预测闭包（可以直接作用在 df 或 tensors 上）
     def predict_q22(df_test):
         model_q22.eval()
-        Z1 = torch.tensor(df_test['Z1'].values, dtype=torch.float32).unsqueeze(1).to(device)
-        Z2 = torch.tensor(df_test['Z2'].values, dtype=torch.float32).unsqueeze(1).to(device)
+        Z1 = extract_proxy(df_test, 'Z1').to(device)
+        Z2 = extract_proxy(df_test, 'Z2').to(device)
         Y0 = torch.tensor(df_test['Y0'].values, dtype=torch.float32).unsqueeze(1).to(device)
         Y1 = torch.tensor(df_test['Y1'].values, dtype=torch.float32).unsqueeze(1).to(device)
         

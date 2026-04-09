@@ -7,7 +7,6 @@ import torch
 import warnings
 warnings.filterwarnings("ignore")
 
-from Main.src.data_generate import dynamic_intervened_data_gen, intervened_data_gen, adjust_para_set_for_new_coding, origin_para_set
 from Main.src.prox_qtr_sl.estimate_prox_qtr_sl import train_policy_prox_qtr_sl
 from Main.src.SRA.estimate_SRA import train_policy_SRA
 from Main.src.Oracle.estimate_Oracle import train_policy_Oracle
@@ -30,6 +29,7 @@ def parse_arguments():
     parser.add_argument("--model_type", type=str, choices=["linear", "nn"], default="linear", help="Class of policy function U_n")
     parser.add_argument("--k_folds", type=int, default=2, help="Number of folds for cross-fitting")
     parser.add_argument("--max_alt_iters", type=int, default=30, help="Max iterations for SCL optimization")
+    parser.add_argument("--dgp", type=str, choices=["S1", "S2"], default="S2", help="Data generation process version to use (S1=data_generate, S2=data_generate_new)")
     
     return parser.parse_args()
 
@@ -42,6 +42,12 @@ def run_comparative_mc(args):
     for k, v in vars(args).items():
         print(f" - {k}: {v}")
     print(f" - Device: {device}\n")
+    
+    
+    if args.dgp == "S1":
+        from Main.src.data_generate import dynamic_intervened_data_gen, adjust_para_set_for_new_coding, origin_para_set
+    else:
+        from Main.src.data_generate_new import dynamic_intervened_data_gen, adjust_para_set_for_new_coding, origin_para_set
     
     params = adjust_para_set_for_new_coding(origin_para_set)
     mc_sample_size = args.mc_eval_size
@@ -66,7 +72,8 @@ def run_comparative_mc(args):
         f1_p, f2_p, q_est_p, _ = train_policy_prox_qtr_sl(
             n_train=args.n_train, seed=current_seed, K_folds=args.k_folds, 
             max_alt_iters=args.max_alt_iters, tau=args.tau, 
-            phi_type=args.phi_type, model_type=args.model_type, save_models=False
+            phi_type=args.phi_type, model_type=args.model_type, save_models=False,
+            dgp=args.dgp
         )
         df_eval_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device)
         results["Proximal"]["true_perf"].append(np.quantile(df_eval_p['Y2'], args.tau))
@@ -77,7 +84,8 @@ def run_comparative_mc(args):
         f1_s, f2_s, q_est_s, _ = train_policy_SRA(
             n_train=args.n_train, seed=current_seed, K_folds=args.k_folds,
             max_alt_iters=args.max_alt_iters, tau=args.tau, 
-            phi_type=args.phi_type, model_type=args.model_type, save_models=False
+            phi_type=args.phi_type, model_type=args.model_type, save_models=False,
+            dgp=args.dgp
         )
         df_eval_s = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_s, f2=f2_s, device=device)
         results["SRA"]["true_perf"].append(np.quantile(df_eval_s['Y2'], args.tau))
@@ -88,7 +96,8 @@ def run_comparative_mc(args):
         f1_o, f2_o, q_est_o, _ = train_policy_Oracle(
             n_train=args.n_train, seed=current_seed, K_folds=args.k_folds,
             max_alt_iters=args.max_alt_iters, tau=args.tau, 
-            phi_type=args.phi_type, model_type=args.model_type, save_models=False
+            phi_type=args.phi_type, model_type=args.model_type, save_models=False,
+            dgp=args.dgp
         )
         df_eval_o = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_o, f2=f2_o, device=device)
         results["Oracle"]["true_perf"].append(np.quantile(df_eval_o['Y2'], args.tau))

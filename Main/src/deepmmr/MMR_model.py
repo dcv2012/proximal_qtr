@@ -39,5 +39,6 @@ class MLP_for_MMR(nn.Module):
         x = self.layer_list[-1](x)
 
         # x = torch.nn.functional.softplus(x)
-        # x = torch.nn.functional.leaky_relu(negative_slope=0.1)
+        x = torch.nn.functional.leaky_relu(negative_slope=0.1)
+        
         return x 

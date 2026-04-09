@@ -5,7 +5,7 @@ from typing import Dict, Any, Tuple, Callable
 
 def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, n_trials: int = 1) -> Tuple[Callable[[pd.DataFrame], np.ndarray], Dict[str, Any]]:
     """
-    Oracle 估计器的 Step 1：使用 Logistic Regression 估计倾向得分。
+    Oracle 估计器的 Step 1: 使用 Logistic Regression 估计倾向得分。
     Oracle 具有访问真实未观测混杂 U 的特权，并按照 DGP 的真实函数形式 (Logistic) 进行建模。
     """
     # 按照 method.tex 4.3.3 定义的 X1_Oracle 和 X2_Oracle

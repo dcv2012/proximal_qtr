@@ -32,6 +32,8 @@ def psi(x: torch.Tensor, y: torch.Tensor, phi_type: int = 1) -> torch.Tensor:
     r"""
     二维替代函数: \psi(x, y) = \phi(x) * \phi(y)
     """
+    if phi_type == 0:
+        return torch.clamp(torch.min(x, y), max=1.0)
     return phi(x, phi_type) * phi(y, phi_type)
 
 class Policy_Linear(nn.Module):
