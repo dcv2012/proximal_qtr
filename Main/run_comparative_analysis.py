@@ -25,7 +25,7 @@ def parse_arguments():
     
     # 策略模型参数
     parser.add_argument("--tau", type=float, default=0.5, help="Target quantile level (e.g., 0.5 for median)")
-    parser.add_argument("--phi_type", type=int, choices=[1, 2, 3, 4], default=1, help="Type of surrogate loss function")
+    parser.add_argument("--phi_type", type=int, choices=[0, 1, 2, 3, 4], default=1, help="Type of surrogate loss function")
     parser.add_argument("--model_type", type=str, choices=["linear", "nn"], default="linear", help="Class of policy function U_n")
     parser.add_argument("--k_folds", type=int, default=2, help="Number of folds for cross-fitting")
     parser.add_argument("--max_alt_iters", type=int, default=30, help="Max iterations for SCL optimization")
