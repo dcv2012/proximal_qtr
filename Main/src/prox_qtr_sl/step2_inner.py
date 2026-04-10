@@ -1,71 +1,38 @@
 import numpy as np
+from typing import Tuple
 
-def compute_weighted_quantile(y: np.ndarray, weights: np.ndarray, tau: float) -> float:
+def inner_optimization_grid(Y2: np.ndarray, q22_vals: np.ndarray, phi1: np.ndarray, phi2: np.ndarray, grid_Q: np.ndarray, tau: float = 0.5) -> Tuple[float, float]:
     r"""
-    计算加权分位数，求解加权 check function 最小化问题:
-    \arg\min_q \sum w_i * \rho_\tau(y_i - q)
-    该问题在统计学中等价于求经验分布的加权 \tau 分位数。
-    
-    y: array-like of shape (N,)
-    weights: array-like of shape (N,), weights should be >= 0
-    tau: float in (0, 1)
-    """
-    y = np.asarray(y)
-    weights = np.asarray(weights)
-    
-    # 除去权重为0的样本以加速排序和累加
-    mask = weights > 1e-12
-    y_filtered = y[mask]
-    w_filtered = weights[mask]
-    
-    if len(y_filtered) == 0:
-        return 0.0 # 极端情况：所有样本权重均为0
-        
-    # 对 Y 值进行排序
-    sort_idx = np.argsort(y_filtered)
-    y_sorted = y_filtered[sort_idx]
-    w_sorted = w_filtered[sort_idx]
-    
-    # 权重归一化
-    w_sum = np.sum(w_sorted)
-    if w_sum == 0:
-        return 0.0
-        
-    w_norm = w_sorted / w_sum
-    cum_weights = np.cumsum(w_norm)
-    
-    # 寻找累积权重大于等于 tau 的第一个元素
-    idx = np.searchsorted(cum_weights, tau)
-    # 防止索引越界
-    idx = min(idx, len(y_sorted) - 1)
-    
-    return float(y_sorted[idx])
-
-def inner_optimization(Y2: np.ndarray, A1: np.ndarray, A2: np.ndarray, d1_pred: np.ndarray, d2_pred: np.ndarray, q22_vals: np.ndarray, tau: float = 0.5) -> float:
-    r"""
-    给定策略下的内层优化，求解最优分位数边界 q。
+    给定当前预估出的策略 (转化为平滑响应 phi)，利用网格搜索(Grid Search) 寻找使得
+    生存估算函数最接近 (1 - \tau) 的最优分位数 q。
     该实现按照如下数学公式求解:
-    \arg\min_q \sum \{ \hat{q}_{22,i} * I(d_1 = A_1) * I(d_2 = A_2) * \rho_\tau(Y_2 - q) \}
+    \arg\min_q | \frac{1}{n} \sum \{ \hat{q}_{22,i} * I(Y_{2,i} > q) * \Phi_1 * \Phi_2 \} - (1 - \tau) |
     
     Y2: 最终观测结果 (N,)
-    A1: 阶段一实际观测治疗方案 (N,)
-    A2: 阶段二实际观测治疗方案 (N,)
-    d1_pred: \hat{d}_1 阶段一由模型 f1 决策出的符号 (N,)
-    d2_pred: \hat{d}_2 阶段二由模型 f2 决策出的符号 (N,)
     q22_vals: Step 1 预估计出的 \hat{q}_{22} 值 (N,)
+    phi1: 阶段一的平滑策略响应 \Phi\{A_1 f_1 / h_n\} (N,)
+    phi2: 阶段二的平滑策略响应 \Phi\{A_2 f_2 / h_n\} (N,)
+    grid_Q: 一维搜索网格 (比如有序独特的 Y2)
     tau: 目标分位数值 (默认 0.5)
+    
+    Returns:
+        最优边界 q_new 和 它对应的生存值 sv_val
     """
-    # 转换所有输入为 Numpy 数组，保证行为一致
     Y2 = np.asarray(Y2)
-    A1 = np.asarray(A1)
-    A2 = np.asarray(A2)
-    d1_pred = np.asarray(d1_pred)
-    d2_pred = np.asarray(d2_pred)
     q22_vals = np.asarray(q22_vals)
+    phi1 = np.asarray(phi1)
+    phi2 = np.asarray(phi2)
+    grid_Q = np.asarray(grid_Q)
     
-    # 计算综合权重：预估的大样本权重 * 指示函数的精准匹配
-    match_indicator = (d1_pred == A1) & (d2_pred == A2)
-    weights = q22_vals * match_indicator
+    # 提前连乘权重加速广播运算
+    q22_phi_prod = q22_vals * phi1 * phi2
     
-    optimal_q = compute_weighted_quantile(Y2, weights, tau)
-    return optimal_q
+    # 使用 numpy broadcast 高效计算所有 grid 点的生存值.
+    # (Y2[:, None] > grid_Q[None, :]) 返回 [n_samples, len(grid_Q)] 的 bool mask.
+    sv_array = np.mean((Y2[:, None] > grid_Q[None, :]) * q22_phi_prod[:, None], axis=0)
+    
+    best_idx = np.argmin(np.abs(sv_array - (1 - tau)))
+    q_new = grid_Q[best_idx]
+    sv_val = sv_array[best_idx]
+    
+    return float(q_new), float(sv_val)

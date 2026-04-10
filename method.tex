@@ -309,7 +309,7 @@ The goal of outer level optimization can be expressed as
 
 In practice, we plan our policy learning in the following steps.
 First, we need to pre-estimate the nuisance function $\hat q_{22}(\bar Z_2,\bar Y_1, \bar A_2)$.
-Then, we alternately solve the inner level optimization and outer level optimization by an iterative process.
+Then, we solve the inner level optimization and outer level optimization via alternating optimization.
 
 
 \subsection{Pre-estimation of the treatment bridge function}
@@ -336,30 +336,33 @@ Then, we can define the risk of estimating $q_{11}$ and $q_{22}$ as
     & (I(A_2'=a_2')q_{22}(\bar Z_2',\bar Y_1',\bar A_2')-q_{11}(Z_1',Y_0',A_1'))\times k_2((A_1, \bar W_2,\bar Y_1),(A_1', \bar W_2',\bar Y_1'))  \big\},
 \end{align}
 where $(\bar A_2', \bar W_2',\bar Z_2', \bar Y_2')$ is an independent copy of the random variables $(\bar A_2, \bar W_2,\bar Z_2, \bar Y_2)$.
-According to the risk minimization criteria, we can estimate $q_{11}$ and $q_{22}$ by minimizing the empirical risks as shown below:
+According to the risk minimization criteria, we can estimate $q_{11}$ and $q_{22}$ by minimizing the empirical risks of U-statistic:
 \begin{align}
-    & \hat q_{11}=\argmin_{q_{11}} \frac{1}{n^2}\sum_{i,j=1}^n (I(A_{1,i}=a_{1,i})q_{11,i}-1)(I(A_{1,j}=a_{1,j})q_{11,j}-1)\cdot k_{1,ij} + \lambda_1||q_{11}||_2^2, \label{q11hat}\\
-    & \hat q_{22}=\argmin_{q_{22}} \frac{1}{n^2}\sum_{i,j=1}^n (I(A_{2,i}=a_{1,i})q_{22,i}-\hat q_{11,i})(I(A_{2,j}=a_{2,j})q_{22,j}-\hat q_{11,j})\cdot k_{2,ij} + \lambda_2||q_{22}||_2^2, \label{q22hat}
+    & \hat q_{11}=\argmin_{q_{11}} \frac{1}{n(n-1)}\sum_{i,j=1, i\neq j}^n (I(A_{1,i}=a_{1,i})q_{11,i}-1)(I(A_{1,j}=a_{1,j})q_{11,j}-1)\cdot k_{1,ij} + \lambda_1||q_{11}||_2^2, \label{q11hat}\\
+    & \hat q_{22}=\argmin_{q_{22}} \frac{1}{n(n-1)}\sum_{i,j=1, i \neq j}^n (I(A_{2,i}=a_{1,i})q_{22,i}-\hat q_{11,i})(I(A_{2,j}=a_{2,j})q_{22,j}-\hat q_{11,j})\cdot k_{2,ij} + \lambda_2||q_{22}||_2^2, \label{q22hat}
 \end{align}
 where $q_{tt,i}=q_{tt}(\bar Z_{t,i}, \bar Y_{t-1,i}, \bar A_{t,i})$,  $k_{t,ij}=((\bar A_{t-1,i}, \bar W_{t,i},\bar Y_{t-1,i}),(\bar A_{t-1,j}, \bar W_{t,j},\bar Y_{t-1,j}))$ , and $\lambda_1, \lambda_2$ are the tuning parameters that control the $L_2-$penalty terms for $t=1,2$.
 In practice, we use neural networks to estimate the first $\hat q_{11}$ and then $\hat q_{22}$.
 
 
 
-
 \subsection{Inner Level Optimization}
-Solving equation \eqref{ilo1} is deemed as a quantile regression problem, and can be solved by sorting or searching methods (e.g., Value Search Method, wang2018).
-However, such methods may lead to slow convergence, ineffectiveness and inconsistency (Xia2025). 
-To this end, motivated by the idea of Sequential Classification Learning (SCL) proposed by (Xia2025),  we adopt a binary search framework for learning the optimal quantile value.
+For fixed $d_1,d_2$, solving equation \eqref{ilo1} can be deemed as minimizing the following loss function with respect to $q$:
+\begin{align}
+    L(q;d_1,d_2) = \Big| SV(d_1,d_2;q) - (1-\tau) \Big|.
+\end{align}
+In fact, it is actually a one-dimensional search problem.
+Since the nuisance estimator $\hat q_{22}$ may be negative so that the target function is non-monotonic, we adopt grid search method to solve the optimization problem.
+Initially, we divide the search interval $[l, u]$ into $N$ discrete points to form a grid
+$\mathcal{Q} = \{q_1,\cdots,q_N\}$.
+Note that the indicator $I(Y_{2,i}>q)$ in the loss function changes its value only when $q=Y_{2,i}$, which allows us simply sort the outcome variables and set $N=n$ and $\mathcal{Q} = \{Y_{2,(1)},\cdots,Y_{2,(n)}\}$.
+Then we calculate the value of loss function in each point $q_i \in \mathcal{Q}$.
+The global optimal quantile value $q^*(d_1,d_2)$ under the regimes $d_1,d_2$ is obtained by 
+\begin{align}
+    q^*(d_1,d_2) = \argmin_{q_i \in \mathcal{Q}} L(q;d_1,d2).
+\end{align}
 
-In practice, we initially find a bounded interval $(l,u)$ that is large enough to contain $q^*$, and let $m = \frac{l+u}{2}$. 
-Then, we compare $\max\limits_{d_1,d_2}SV(d_1,d_2;m)$ with $1-\tau$, and if
-\begin{itemize}
-    \item $\max\limits_{d_1,d_2}SV(d_1,d_2;m) = 1-\tau$: the optimal quantile $q^* = m$, and $(d_1^*,d_2^*) = \argmax\limits_{d_1,d_2}SV(d_1,d_2;q^*)$;
-    \item $\max\limits_{d_1,d_2}SV(d_1,d_2;m) > 1-\tau$: continue search in the interval $(m,u)$;
-    \item $\max\limits_{d_1,d_2}SV(d_1,d_2;m) < 1-\tau$: continue search in the interval $(l,m)$.
-\end{itemize}
-
+In addition, it can be easily shown that the grid search method can converge to the global optimum according to Lipschitz continuity bound.
 
 
 \subsection{Outer level optimization}
@@ -367,15 +370,15 @@ Motivated by (\textbf{Laha2021}), we consider solving the original optimization 
 For a fixed $q$, consider an alternative form of the targeted survival function 
 \begin{align}
     &SV(f_1,f_2;q) = \mathbb{E} \big[I(Y_2 > q)\cdot q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2}) \cdot  I(A_1f_1(H_1)>0)I(A_2f_2(H_2)>0 \big] \\
-    \Longleftrightarrow\quad & SV(d_1,d_2;q) = \mathbb{E} \big[I(Y_2 > q)\cdot q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2}) \cdot  I(d_1(H_1)=A_1)I(d_2(H_2)=A_2) \big,
+    \Longleftrightarrow\quad & SV(d_1,d_2;q) = \mathbb{E} \big[I(Y_2 > q)\cdot q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2}) \cdot  I(d_1(H_1)=A_1)I(d_2(H_2)=A_2) \big],
 \end{align}
 where $H_1=\{Y_0\}, H_2=\{\bar Y_1(A_1)\} \subset \{\bar Y_1,A_1\}:= H_2^\dag$.
 \begin{rem}[]
-    It is essential to notice that the historical information set $H_t$ relies on the potential outcomes of previous stages under the proximal setting (Y.Gao, J.Zhang), which is different from the setting of no unmeasured confounder assumption (NUCA).
-    However, it is not intuitive to be the direct input parameters of treatment regime $d_t$. 
+    It is essential to notice that the historical information set $H_t$ relies on the potential outcomes of previous stages under the proximal setting (Y.Gao, J.Zhang), which is different from the setting of the no unmeasured confounder assumption (NUCA).
+    However, it is not intuitive to be the direct input parameters of the treatment regime $d_t$. 
     In fact, the set $H_t=\{\bar Y_{t-1}(\bar A_{t-1})\}$ can be viewed as a random variable that contains the necessary information yielded by observed data $H_t^\dag =\{\bar Y_{t-1}, \bar A_{t-1}\}$. 
     The notation $d_t(H_t)$ implies the treatment regime $d_t$ is actually determined by the observed outcomes of previous stages $\bar Y_{t-1}$ and the practical treatments $\bar a_{t-1}$ which lead to these outcomes.
-    To prevent confusion, from the second stage, we suggest to use $H_t$ to denote the variables associated with treatment regime $d_t(H_t)$ (e.g., decision variables $f_t(H_t)$, $SQ_t(H_t;A_t,q),\eta_t(H_t)$ that would be introduced later), and $H_t^\dag$ to be other variables (e.g., condition set).
+    To prevent confusion, from the second stage, we suggest to use $H_t$ to denote the variables associated with treatment regime $d_t(H_t)$ (e.g., decision variables $f_t(H_t)$, $SQ_t(H_t; A_t,q),\eta_t(H_t)$ that would be introduced later), and $H_t^\dag$ to be other variables (e.g., condition set).
 \end{rem}
 
 Similar to (\textbf{\textbf{Laha2021}}), we can further define a form with a surrogate loss of the targeted survival function as
@@ -414,51 +417,56 @@ and the solution leads to the estimated regimes $\hat d_{n,1} = \text{sign}(\hat
 
 
 \subsection{Learning Algorithm}
-
 \begin{algorithm}[htb]
-    \caption{Quantile-Optimal DTR Estimation by Prox\_qtr\_sl}
+    \caption{Quantile-Optimal DTR Estimation via Alternating Optimization}
     \SetKwInOut{Input}{Input}
     \SetKwInOut{Output}{Output}
     \SetKwIF{If}{ElseIf}{Else}{if}{:}{elif}{else:}{}
 
-    \Input{Observed data $\{\bar Y_{2,i},\bar Z_{2,i},\bar A_{2,i}, \bar W_{2,i}\}^n_{i=1}$, quantile level $\tau$, initial interval lower bound $l^{(0)}$ and upper bound $u^{(0)}$, tolerance threshold $\varepsilon_n, \kappa_n$, bandwidth $h_n$}
+    \Input{Observed data $\{\bar Y_{2,i},\bar Z_{2,i},\bar A_{2,i}, \bar W_{2,i}\}^n_{i=1}$, quantile level $\tau$, grid set $\mathcal{Q}$ (e.g., sorted unique values of $Y_{2}$), max iterations $K_{max}$, tolerance thresholds $\varepsilon_n, \delta_n$, bandwidth $h_n$}
     \Output{Estimated optimal policies and optimal quantile value}
     
     \BlankLine
     Estimate nuisance treatment bridge function $\hat{q}_{22}(\bar Z_2,\bar Y_1, \bar A_2)$ by \eqref{q11hat} and \eqref{q22hat}\;
-    \For{$k=1,2,\cdots,$}
+    Initialize surrogate quantile $q^{(0)}$ (e.g., sample $\tau$-th quantile of $Y_2$)\;
+    \For{$k=1,2,\cdots, K_{max}$}
     {
-        $m^{(k)} \leftarrow (l^{(k)} + u^{(k)})/2$ \;
-        Solve 
+        \textbf{Step 1. Policy Update (Outer level):} Fix $q^{(k-1)}$, solve for the optimal policies:
         \begin{flalign*}
-            (\hat f_{n,1}^{(k)},\hat f_{n,2}^{(k)}) = &\argmax_{(f_1,f_2) \in \mathcal{U}_n}\frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>m^{(k)}) \cdot  
-            \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \\&\lambda_n(||f_1||_{n,2}+||f_2||_{n,2});
+            (\hat f_{n,1}^{(k)},\hat f_{n,2}^{(k)}) = &\argmax_{(f_1,f_2) \in \mathcal{U}_n}\frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>q^{(k-1)}) \cdot  
+            \hat q_{22,i} \cdot \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \lambda_n(||f_1||_{n,2}+||f_2||_{n,2});
         \end{flalign*} \\
-        \If{$|\hat{SV}_{\Phi}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};m^{(k)};{h_n}) - (1-\tau)| \leq \varepsilon_n$}{\textbf{break}\;}
-        \ElseIf{$\hat{SV}_{\Phi}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};m^{(k)};{h_n}) \geq (1-\tau)$}
-        {$l^{(k+1)} \leftarrow m^{(k)}, \: u^{(k+1)}\leftarrow u^{(k)}$\;}
-        \Else{$l^{(k+1)} \leftarrow l^{(k)}, \: u^{(k+1)}\leftarrow m^{(k)}$\;}
+        \textbf{Step 2. Quantile Update (Inner level):} Fix current policies $(\hat f_{n,1}^{(k)},\hat f_{n,2}^{(k)})$, evaluate over the grid $\mathcal{Q}$ to find the new quantile:
+        \begin{flalign*}
+            q^{(k)} \leftarrow \argmin_{q \in \mathcal{Q}} \left| \hat{SV}_{\Phi}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};q;{h_n}) - (1-\tau) \right|;
+        \end{flalign*}\\
+        \textbf{Step 3. Convergence Check:} \\
+        \If{$|q^{(k)} - q^{(k-1)}| \leq \delta_n$ \textbf{\upshape or} $\left|\hat{SV}_{\Phi}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};q^{(k)};{h_n}) - (1-\tau)\right| \leq \varepsilon_n$ \textbf{\upshape or} $\sum_{t=1}^2 \sum_{i=1}^n I\big( \text{sign}(\hat{f}_{n,t}^{(k)}(H_{t,i})) \neq \text{sign}(\hat{f}_{n,t}^{(k-1)}(H_{t,i})) \big) = 0$}{\textbf{break}\;}
+
         \BlankLine
-        \If{$u^{(k)}-l^{(k)} \leq \kappa_n$}{\textbf{break}\;}
     }
     $\hat{d}_{n,1} \leftarrow \text{sign}(\hat f_{n,1}^{(k)}), \: \hat{d}_{n,2} \leftarrow \text{sign}(\hat f_{n,2}^{(k)})$ \;
     \Return $\{(\hat{d}_{n,1},\hat{d}_{n,2}), m^{(k)}\}$\;
     \label{alg1}
 \end{algorithm}
 
-In this section, we summarize the complete learning process of our method, Prox\_qtr\_sl, for estimating the optimal policies $(d_1^*, d_2^*)$ in Algorithm \ref{alg1}. $\hat{SV}_{\Phi}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};m^{(k)};{h_n})$ is defined as
+In this section, we summarize the complete alternating optimization process of our method, Prox\_qtr\_sl, for estimating the optimal policies $(\hat d_{1,n}, \hat d_{2,n})$ in Algorithm \ref{alg1}. 
+
+To evaluate the estimated policies, we introduce an estimator (Jiang2017, Xia2025) of the survival function:
 \begin{align}
-    \hat{SV}_{\Phi}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};m^{(k)};{h_n}) = \frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>m^{(k)}) \cdot \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \Phi\{A_{1,i}f_1(H_{1,i})/h_n\}\Phi\{A_{2,i}f_2(H_{2,i})/h_n\} \big], \notag
+    \hat{SV}_{\Phi}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};q;{h_n}) = \frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>q) \cdot \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \Phi\{A_{1,i}\hat{f}_{n,1}^{(k)}(H_{1,i})/h_n\}\Phi\{A_{2,i}\hat{f}_{n,2}^{(k)}(H_{2,i})/h_n\} \big], \notag
 \end{align}
 where $\Phi(\cdot)$ denotes the distribution function of the standard normal distribution, and $h_n$ is the bandwidth hyperparameter.
-
-The chosen values of some hyperparameters are as follows:
+It offers another soft surrogate form $\Phi\{A_{1}f_{1}/h_n\}$ and $\Phi\{A_{2}f_{2}/h_n\}$
+for hard indicators of the policies, which can help to improve computational stability.
+We also consider three conditions to detect convergence: (1) the estimator $\hat{SV}_{\Phi}(\hat{f}_{n,1}^{(k)},\hat{f}_{n,2}^{(k)};q;{h_n})$ is close enough to $(1-\tau)$, which is controlled by parameter $\varepsilon_n$; (2) the new quantile is close enough to the old, which is controled by parameter $\delta_n$; (3) the signals of estimaed policies (i.e., the estimated regimes) no longer change.
+The chosen values of some parameters are as follows:
 \begin{itemize}
-    \item lower bound of initial interval $l^{(0)}$: $\min\limits_{i}{Y_{2,i}}$,
-    \item upper bound of initial interval $u^{(0)}$: $\max\limits_{i}{Y_{2,i}}$,
+    \item grid set $\mathcal{Q}$: the unique sorted distribution values of the outcome variable $\{Y_{2,(1)},\cdots,Y_{2,(n)}\}$;
+    \item max iterations $K_{max}$: 20;
     \item bandwidth $h_n$:  $0.2/\log n$,
-    \item tolerance threshold $\varepsilon_n$: $0.5/\sqrt{n}$,
-    \item tolerance threshold $\kappa_n$: $\text{sd}(Y_2)/(6\sqrt{n})$, where $\text{sd}(Y_2)$ is the sample standard deviation of outcome variable $Y_2$.
+    \item convergence tolerance for survival value $\varepsilon_n$: $10^{-4}$,
+    \item convergence tolerance for quantile threshold $\delta_n$: $10^{-4}$.
 \end{itemize}
 
 
@@ -728,11 +736,11 @@ And the following condition from (\textbf{Laha2021}) is helpful to construct a s
 
 
 \subsection{Finite sample excess risk bound}
-In this section, we discuss the risk bound with surrogate form, i.e., the $\psi-$regret bound.
+In this section, we discuss the risk bound with the surrogate form, i.e., the $\psi-$regret bound.
 In fact, it suffices to bound the $\psi-$regret according to Fisher consistency.
-Without loss of generality, we assume that the optimal $q^*$ has already been found, so that we can proceed with the following discussion with fixed $q = q*$. 
+Without loss of generality, we assume that the optimal $q^*$ has already been found, so that we can proceed with the following discussion for fixed $q = q*$. 
 
-To this end, we will re-clarify some certain notations that may be referred to in the following discussion:
+To this end, we will re-clarify some notations that may be referred to in the following discussion:
 \begin{align}
     & SV_\psi^{*} = SV_\psi(\tilde f_1,\tilde f_2;q^*) = \sup_{(f_1,f_2) \in \mathcal{F}}SV_\psi(f_1,f_2;q^*)
     = \sup_{(f_1,f_2) \in \mathcal{F}}\mathbb{P}\big[I(Y_2>q^*)\cdot q_{22}\cdot \psi(A_1f_1(H_1), A_2f_2(H_2)\big], \notag\\

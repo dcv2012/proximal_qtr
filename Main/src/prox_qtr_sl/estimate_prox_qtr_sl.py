@@ -9,6 +9,7 @@ import scipy.stats as stats
 
 from Main.src.prox_qtr_sl.step1_nuisance import estimate_nuisance, prepare_tensors
 from Main.src.prox_qtr_sl.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
+from Main.src.prox_qtr_sl.step2_inner import inner_optimization_grid
 
 import os
 
@@ -142,17 +143,19 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
     A1_array = df_train['A1'].values
     A2_array = df_train['A2'].values
     
-    l_bound = np.min(Y2_array)
-    u_bound = np.max(Y2_array)
-    epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
-    kappa_n = min(1e-4, np.std(Y2_array) / (6.0 * np.sqrt(n_train)))
+    grid_Q = np.unique(np.sort(Y2_array))
+    epsilon_n = 1e-4
+    delta_n = 1e-4
     hn = 0.2 / np.log(n_train)
     
-    print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}, hn: {hn:.6f}")
+    print(f"Alternating Optim Settings -> Grid size: {len(grid_Q)}, epsilon_n: {epsilon_n:.6f}, delta_n: {delta_n:.6f}, hn: {hn:.6f}")
     
-    q_current = None
+    q_current = np.quantile(Y2_array, tau)
     f1, f2 = None, None
     best_sv = 0.0
+    
+    last_sign_f1 = None
+    last_sign_f2 = None
     
     # 提前将验证不需要更新的张量放入目标设备，避免后续 SCL 迭代中几十次重复拷贝
     device_compute = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -164,9 +167,8 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
     ], dim=1).to(device_compute)
     
     for it in range(max_alt_iters):
-        print(f"\n--- SCL Binary Search Iteration {it+1}/{max_alt_iters} ---")
-        q_current = (l_bound + u_bound) / 2.0
-        print(f"Testing binary boundary q_current (m) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}]")
+        print(f"\n--- Alternating Optim Iteration {it+1}/{max_alt_iters} ---")
+        print(f"Current q^(k-1) = {q_current:.6f}")
         
         # Outer Level
         best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
@@ -190,21 +192,41 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
         phi1 = stats.norm.cdf((A1_array * f1_train_out) / hn)
         phi2 = stats.norm.cdf((A2_array * f2_train_out) / hn)
         
-        sv_val = np.mean((Y2_array > q_current) * q22_train_oof * phi1 * phi2)
+        # 提取策略符号计算 Zero-flip
+        sign_f1 = (f1_train_out > 0).astype(int)
+        sign_f2 = (f2_train_out > 0).astype(int)
+        
+        # Inner Level: Grid search over q
+        q_new, sv_val = inner_optimization_grid(Y2_array, q22_train_oof, phi1, phi2, grid_Q, tau)
+        
         best_sv = sv_val
-        print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
+        print(f"    -> Updated Empirical Survival Value (SV) at new q {q_new:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
+        
+        # Convergence Checks
+        policy_flip_count = 0
+        if last_sign_f1 is not None and last_sign_f2 is not None:
+            policy_flip_count = np.sum(sign_f1 != last_sign_f1) + np.sum(sign_f2 != last_sign_f2)
+            
+        print(f"    -> Convergence checks: |q_new - q_current| = {abs(q_new - q_current):.6f}, |SV - target| = {abs(sv_val - (1 - tau)):.6f}, Policy Flips: {policy_flip_count}")
         
         if abs(sv_val - (1 - tau)) <= epsilon_n:
             print(f"✅ SCL Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
+            q_current = q_new
             break
-        elif sv_val >= (1 - tau):
-            l_bound = q_current
-        else:
-            u_bound = q_current
             
-        if (u_bound - l_bound) <= kappa_n:
-            print(f"✅ SCL Converged by kappa bounded interval width: {u_bound - l_bound:.6f} <= {kappa_n:.6f}")
+        if abs(q_new - q_current) <= delta_n:
+            print(f"✅ SCL Converged by delta_n threshold (q settled): shifed {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
+            q_current = q_new
             break
+            
+        if it > 0 and policy_flip_count == 0:
+            print(f"✅ SCL Converged by Zero-Flip: Policies haven't changed from the last iteration.")
+            q_current = q_new
+            break
+            
+        q_current = q_new
+        last_sign_f1 = sign_f1
+        last_sign_f2 = sign_f2
         
     print(f"\n✅ Training Completed! Final optimal q: {q_current:.6f}, Estimated SV: {best_sv:.6f}")
     

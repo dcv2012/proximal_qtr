@@ -28,7 +28,7 @@ def parse_arguments():
     parser.add_argument("--phi_type", type=int, choices=[0, 1, 2, 3, 4], default=1, help="Type of surrogate loss function")
     parser.add_argument("--model_type", type=str, choices=["linear", "nn"], default="linear", help="Class of policy function U_n")
     parser.add_argument("--k_folds", type=int, default=2, help="Number of folds for cross-fitting")
-    parser.add_argument("--max_alt_iters", type=int, default=30, help="Max iterations for SCL optimization")
+    parser.add_argument("--max_alt_iters", type=int, default=20, help="Max iterations for SCL optimization")
     parser.add_argument("--dgp", type=str, choices=["S1", "S2"], default="S2", help="Data generation process version to use (S1=data_generate, S2=data_generate_new)")
     
     return parser.parse_args()
@@ -50,7 +50,7 @@ def plot_boxplot(results, args, res_dir):
         plt.figure(figsize=(8, 6))
         sns.boxplot(x="Estimator", y="V(d_hat)", data=df_plot, palette="Set2")
         plt.title(f"True Quantile Value of Estimated Policies\n(n={args.n_train}, tau={args.tau}, reps={args.mc_reps})")
-        plt.ylabel("Target Quantile Value $V(\hat{d})$")
+        plt.ylabel(r"Target Quantile Value $V(\hat{d})$")
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         
         # Save figure
