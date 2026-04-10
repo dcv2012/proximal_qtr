@@ -34,6 +34,38 @@ def parse_arguments():
     return parser.parse_args()
 
 
+def plot_boxplot(results, args, res_dir):
+    try:
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        
+        # Prepare data for plotting
+        plot_data = []
+        for method in ["Proximal", "SRA", "Oracle"]:
+            for val in results[method]["true_perf"]:
+                plot_data.append({"Estimator": method, "V(d_hat)": val})
+                
+        df_plot = pd.DataFrame(plot_data)
+        
+        plt.figure(figsize=(8, 6))
+        sns.boxplot(x="Estimator", y="V(d_hat)", data=df_plot, palette="Set2")
+        plt.title(f"True Quantile Value of Estimated Policies\n(n={args.n_train}, tau={args.tau}, reps={args.mc_reps})")
+        plt.ylabel("Target Quantile Value $V(\hat{d})$")
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        
+        # Save figure
+        fname = f"boxplot_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_reps{args.mc_reps}.png"
+        save_path = os.path.join(res_dir, fname)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"📊 Boxplot successfully saved to: {save_path}")
+        
+    except ImportError:
+        print("\n⚠️ Matplotlib or Seaborn is not installed. Skipping boxplot generation.")
+        print("To generate plots, please run: pip install matplotlib seaborn")
+
+
 def run_comparative_mc(args):
     print("\n" + "#"*70)
     print("   MONTE CARLO COMPARATIVE ANALYSIS (Proximal vs SRA vs Oracle)")
@@ -60,6 +92,15 @@ def run_comparative_mc(args):
         "SRA": {"true_perf": [], "train_est": []},
         "Oracle": {"true_perf": [], "train_est": []}
     }
+    
+    # 提前定义好保存路径并在开始前写入由于随时追踪原始结果的文件头
+    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis')
+    os.makedirs(res_dir, exist_ok=True)
+    fname = f"comparative_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_{args.dgp}_reps{args.mc_reps}.csv"
+    save_path = os.path.join(res_dir, fname)
+    
+    with open(save_path, 'w') as f:
+        f.write("Repetition,Estimator,True_Perf,Train_Est\n")
     
     st_time = time.time()
     
@@ -111,6 +152,12 @@ def run_comparative_mc(args):
         )
         print(iter_log)
         
+        # 每次循环结束后随时将结果追加记录到文件
+        with open(save_path, 'a') as f:
+            f.write(f"{i+1},Proximal,{results['Proximal']['true_perf'][-1]:.6f},{results['Proximal']['train_est'][-1]:.6f}\n")
+            f.write(f"{i+1},SRA,{results['SRA']['true_perf'][-1]:.6f},{results['SRA']['train_est'][-1]:.6f}\n")
+            f.write(f"{i+1},Oracle,{results['Oracle']['true_perf'][-1]:.6f},{results['Oracle']['train_est'][-1]:.6f}\n")
+        
     print(f"\n[Simulation Completed] Execution Time: {(time.time() - st_time)/60:.2f} minutes")
     
     # 统计指标 (按 4.3 Section 的三条标准计算)
@@ -148,15 +195,15 @@ def run_comparative_mc(args):
         print(f"{row['Estimator']:<12} | {row['Mean_True_Q_V(d)']:<18.6f} | {row['Std_True_Q_V(d)']:<18.6f} | {row['Estimation_Error_Mean']:<22.6f}")
     print("="*85 + "\n")
     
-    # 保存结果到独立目录
-    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis')
-    os.makedirs(res_dir, exist_ok=True)
+    # 追加统计结果到同一个文件的末尾
+    with open(save_path, 'a') as f:
+        f.write("\n=== SUMMARY STATISTICS ===\n")
+    df_summary.to_csv(save_path, mode='a', index=False)
     
-    fname = f"comparative_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_reps{args.mc_reps}.csv"
-    save_path = os.path.join(res_dir, fname)
-        
-    df_summary.to_csv(save_path, index=False)
     print(f"💾 Report safely saved correctly to: {save_path}")
+
+    # Generate and save boxplot
+    plot_boxplot(results, args, res_dir)
 
 if __name__ == "__main__":
     args = parse_arguments()
