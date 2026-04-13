@@ -38,8 +38,6 @@ def parse_arguments():
 
 
 def plot_boxplot_from_df(df_valid, args, res_dir):
-        
-        
     # Prepare data for plotting
     plt.figure(figsize=(8, 6))
     
