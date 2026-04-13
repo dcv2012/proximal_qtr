@@ -27,7 +27,7 @@ def train_policy_SRA(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=
     
     if dgp == "S1":
         from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
-    else:
+    elif dgp == "S2":
         from Main.src.data_generate_new import data_gen, adjust_para_set_for_new_coding, origin_para_set
 
     # 为了复现稳定性，统一设置随机种子
@@ -117,3 +117,89 @@ def train_policy_SRA(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=
         save_trained_models(f1, f2, best_p, n_train, tau, phi_type, model_type, seed)
         
     return f1, f2, q_current, best_sv
+
+def train_policy_SRA_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2"):
+    """
+    不带 Cross-Fitting (CF) 版本的 SRA 策略学习函数。
+    """
+    if dgp == "S1":
+        from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
+    elif dgp == "S2":
+        from Main.src.data_generate_new import data_gen, adjust_para_set_for_new_coding, origin_para_set
+
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+    print("\n" + "="*50)
+    print(f"🚀 Starting SRA Policy Learning (NO-CF MODE, {dgp})")
+    n_val = int(n_train * 0.25)
+    params_dgp = adjust_para_set_for_new_coding(origin_para_set)
+    df_train = data_gen(n_train, params_dgp)
+    df_val = data_gen(n_val, params_dgp)
+    
+    print("\n=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===")
+    ipw_train_oof = np.zeros(len(df_train))
+    ipw_val_preds = np.zeros(len(df_val))
+    
+    # 简单拆分一次 80/20 用于调参
+    sub_t, sub_v = train_test_split(df_train, test_size=0.2, random_state=seed)
+    predict_weights_fn, _ = estimate_nuisance(sub_t, sub_v)
+    
+    # 直接全量计算
+    ipw_train_oof = predict_weights_fn(df_train)
+    ipw_val_preds = predict_weights_fn(df_val)
+
+    print("\n=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===")
+    Y2_array = df_train['Y2'].values
+    A1_array = df_train['A1'].values
+    A2_array = df_train['A2'].values
+    
+    l_bound, u_bound = np.min(Y2_array), np.max(Y2_array)
+    epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
+    kappa_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
+    hn = 0.2 / np.log(n_train)
+    
+    device_compute = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    H1_train_tensor = torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1).to(device_compute)
+    H2_train_tensor = torch.cat([
+        torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1),
+        torch.tensor(df_train['Y1'].values, dtype=torch.float32).unsqueeze(1),
+        torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)
+    ], dim=1).to(device_compute)
+    
+    q_current = (l_bound + u_bound) / 2.0
+    best_sv = 0.0
+    f1, f2 = None, None
+    best_p = None
+
+    for it in range(max_alt_iters):
+        q_current = (l_bound + u_bound) / 2.0
+        print(f"--- SRA No-CF Iter {it+1}/{max_alt_iters} Binary Search q = {q_current:.6f} ---")
+        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
+        ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
+        ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
+        f1, f2, _ = train_outer_policies(DataLoader(ds_t, 128, True), DataLoader(ds_v, 128, False), best_p, phi_type, model_type)
+        
+        f1.eval(); f2.eval()
+        with torch.no_grad():
+            f1_out = f1(H1_train_tensor).cpu().numpy().flatten()
+            f2_out = f2(H2_train_tensor).cpu().numpy().flatten()
+
+        phi1 = stats.norm.cdf((A1_array * f1_out) / hn)
+        phi2 = stats.norm.cdf((A2_array * f2_out) / hn)
+        sv_val = np.mean((Y2_array > q_current) * ipw_train_oof * phi1 * phi2)
+        best_sv = sv_val
+        
+        if abs(sv_val - (1 - tau)) <= epsilon_n or (u_bound - l_bound) <= kappa_n:
+            print(f"✅ SRA No-CF Converged. q: {q_current:.6f}, SV: {sv_val:.6f}")
+            break
+        elif sv_val >= (1 - tau):
+            l_bound = q_current
+        else:
+            u_bound = q_current
+
+    if save_models: 
+        save_trained_models(f1, f2, best_p, n_train, tau, phi_type, model_type, seed)
+        
+    return f1, f2, q_current, best_sv
+

@@ -6,7 +6,7 @@ origin_para_set = {
     'mu_Y0': -0.35,
     'sigma_Y0': 0.2,
     'mu_U0': 0.35,
-    'sigma_U0': 1.0,
+    'sigma_U0': 0.5,
     
     # Propensity near 0.5 but mildly confounded to preserve PIPW policy value
     'alpha_A1': [-0.2, 0.05, 0.5],
@@ -21,6 +21,7 @@ origin_para_set = {
     'mu_W11': [0.2, -0.35, 0.8],
     'sigma_W11': 1.8,
     
+    # Y_1, U_1
     'mu_Y1': [0.2, 0.2, 0.4, -0.6],
     'sigma_Y1': 0.2,
     'mu_U1': [0.1, 0.2, 0, 0.8],
@@ -31,9 +32,9 @@ origin_para_set = {
     
     # Z2 is a STRONG proxy for U1 -> Helps q22 (PIPW)
     'mu_Z21': [0.2, 0, 0, 0.2, 0.2, 2.5, 0.2, 0.2, -0.5],
-    'sigma_Z21': 1.5,
+    'sigma_Z21': 0.2,
     'mu_Z22': [-0.1, 0.1, 0.1, 0.2, -0.2, -0.5, -0.1, 0.2, 0.5],
-    'sigma_Z22': 1.5,
+    'sigma_Z22': 0.2,
     
     # W2 is a STRONG proxy for U1 -> Helps h22 (PHA, PMR, cPMR)
     'mu_W21': [0.35, 0.2, 0.5, 2.5, -0.2, 0.2],
@@ -43,7 +44,7 @@ origin_para_set = {
     
     # Huge U effect on Y2 to destroy Naive Estimation. Treat A=1 is actually terrible.
     # ['ones', 'A2', 'A1', 'A2*A1', 'W21', 'W22', 'W11', 'Y1', 'U1', 'Y0', 'U0']
-    'mu_Y2': [1.0, -3.0, -3.0, -2.0, 0, 0, 0, 0, 6.0, 0, 6.0],
+    'mu_Y2': [1.0, -3.0, -3.0, -2.0, 0, 0, 0, 0, 3.0, 0, 3.0],
     'sigma_Y2': 0.2
 }
 
