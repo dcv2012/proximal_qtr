@@ -258,7 +258,7 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
     print(f"Generated data: Train({n_train}), Val({n_val})")
     
     # === 1. 滋扰估计: 一次性全量估计 q22 ===
-    print("\n=== Step 1: Pre-estimating Bridge Functions (q22) - NO CF ===")
+    print("\n=== Step 1: Pre-estimating Bridge Functions (q22) w/o Cross-Fitting ===")
     
     q22_train_oof = np.zeros(len(df_train))
     q22_val_preds = np.zeros(len(df_val))
@@ -292,7 +292,7 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
             return np.clip(w, low, high)
         return w
 
-    print(f"Trimming q22 weights... Train mean: {np.mean(q22_train_oof):.4f}")
+    print(f"Trimming q22 weights (1%/99% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
     q22_train_oof = trim_weights(q22_train_oof)
     q22_val_preds = trim_weights(q22_val_preds)
 
@@ -322,7 +322,7 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
     ], dim=1).to(device_compute)
     
     for it in range(max_alt_iters):
-        print(f"\n--- SCL Alternating Optim {it+1}/{max_alt_iters} ---")
+        print(f"\n--- Alternating Optim Iteration {it+1}/{max_alt_iters} ---")
         print(f"Current q^(k-1) = {q_current:.6f}")
 
         best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 

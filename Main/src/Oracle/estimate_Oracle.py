@@ -175,7 +175,7 @@ def train_policy_Oracle_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.
 
     for it in range(max_alt_iters):
         q_current = (l_bound + u_bound) / 2.0
-        print(f"--- Oracle No-CF Iter {it+1}/{max_alt_iters} Binary Search q = {q_current:.6f} ---")
+        print(f"--- Iter {it+1}/{max_alt_iters} Binary Search m (q) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}] ---")
         best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
         ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
         ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
@@ -191,13 +191,17 @@ def train_policy_Oracle_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.
         sv_val = np.mean((Y2_array > q_current) * ipw_train_oof * phi1 * phi2)
         best_sv = sv_val
         
-        if abs(sv_val - (1 - tau)) <= epsilon_n or (u_bound - l_bound) <= kappa_n:
-            print(f"✅ Oracle No-CF Converged. q: {q_current:.6f}, SV: {sv_val:.6f}")
+        if abs(sv_val - (1 - tau)) <= epsilon_n:
+            print(f"✅ Oracle SCL Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
             break
         elif sv_val >= (1 - tau):
             l_bound = q_current
         else:
             u_bound = q_current
+            
+        if (u_bound - l_bound) <= kappa_n:
+            print(f"✅ Oracle SCL Converged by kappa width: {u_bound - l_bound:.6f} <= {kappa_n:.6f}")
+            break
 
     if save_models: 
         save_trained_models(f1, f2, best_p, n_train, tau, phi_type, model_type, seed)
