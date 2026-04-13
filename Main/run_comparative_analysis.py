@@ -4,6 +4,8 @@ import argparse
 import os
 import time
 import torch
+import matplotlib.pyplot as plt
+import seaborn as sns
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -36,31 +38,25 @@ def parse_arguments():
 
 
 def plot_boxplot_from_df(df_valid, args, res_dir):
-    try:
-        import matplotlib.pyplot as plt
-        import seaborn as sns
         
-        # Prepare data for plotting
-        plt.figure(figsize=(8, 6))
         
-        # df_valid contains 'Estimator', 'True_Perf', 'Train_Est'
-        sns.boxplot(x="Estimator", y="True_Perf", data=df_valid, palette="Set2")
-        plt.title(f"True Quantile Value of Estimated Policies\n(n={args.n_train}, tau={args.tau}, reps={args.mc_reps}, phi_type={args.phi_type})")
-        plt.ylabel(r"Target Quantile Value $V(\hat{d})$")
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
+    # Prepare data for plotting
+    plt.figure(figsize=(8, 6))
+    
+    # df_valid contains 'Estimator', 'True_Perf', 'Train_Est'
+    sns.boxplot(x="Estimator", y="True_Perf", data=df_valid, palette="Set2")
+    plt.title(f"True Quantile Value of Estimated Policies\n(n={args.n_train}, tau={args.tau}, reps={args.mc_reps}, phi_type={args.phi_type})")
+    plt.ylabel(r"Target Quantile Value $V(\hat{d})$")
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    
+    # Save figure
+    fname = f"boxplot_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_reps{args.mc_reps}.png"
+    save_path = os.path.join(res_dir, fname)
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"📊 Boxplot successfully saved to: {save_path}")
         
-        # Save figure
-        fname = f"boxplot_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_reps{args.mc_reps}.png"
-        save_path = os.path.join(res_dir, fname)
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        plt.close()
-        
-        print(f"📊 Boxplot successfully saved to: {save_path}")
-        
-    except ImportError:
-        print("\n⚠️ Matplotlib or Seaborn is not installed. Skipping boxplot generation.")
-        print("To generate plots, please run: pip install matplotlib seaborn")
-
 
 def run_comparative_mc(args):
     print("\n" + "#"*70)
