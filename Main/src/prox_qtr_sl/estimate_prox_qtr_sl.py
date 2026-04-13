@@ -323,6 +323,8 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
     
     for it in range(max_alt_iters):
         print(f"\n--- SCL Alternating Optim {it+1}/{max_alt_iters} ---")
+        print(f"Current q^(k-1) = {q_current:.6f}")
+
         best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
                                                  q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
         
@@ -347,15 +349,26 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
         
         q_new, sv_val = inner_optimization_grid(Y2_array, q22_train_oof, phi1, phi2, grid_Q, tau)
         best_sv = sv_val
+        print(f"    -> Updated Empirical Survival Value (SV) at new q {q_new:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
         
         policy_flip_count = 0
         if last_sign_f1 is not None:
             policy_flip_count = np.sum(sign_f1 != last_sign_f1) + np.sum(sign_f2 != last_sign_f2)
             
-        print(f"    -> q_new: {q_new:.6f}, SV: {sv_val:.6f}, Flips: {policy_flip_count}")
+        print(f"    -> Convergence checks: |q_new - q_current| = {abs(q_new - q_current):.6f}, |SV - target| = {abs(sv_val - (1 - tau)):.6f}, Policy Flips: {policy_flip_count}")
         
-        if abs(sv_val - (1-tau)) <= epsilon_n or (it > 0 and policy_flip_count == 0):
-            print("✅ Converged.")
+        if abs(sv_val - (1 - tau)) <= epsilon_n:
+            print(f"✅ AO Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
+            q_current = q_new
+            break
+            
+        if abs(q_new - q_current) <= delta_n:
+            print(f"✅ AO Converged by delta_n threshold (q settled): shifed {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
+            q_current = q_new
+            break
+           
+        if it > 0 and policy_flip_count == 0:
+            print(f"✅ AO Converged by Zero-Flip: Policies haven't changed from the last iteration.")
             q_current = q_new
             break
             
