@@ -66,8 +66,8 @@ def train_policy_Oracle(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, t
     
     l_bound = np.min(Y2_array)
     u_bound = np.max(Y2_array)
-    epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
-    kappa_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
+    epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
+    kappa_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = 0.2 / np.log(n_train)
     
     print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}, hn: {hn:.6f}")
@@ -158,8 +158,8 @@ def train_policy_Oracle_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.
     A2_array = df_train['A2'].values
     
     l_bound, u_bound = np.min(Y2_array), np.max(Y2_array)
-    epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
-    kappa_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
+    epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
+    kappa_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = 0.2 / np.log(n_train)
 
     print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}, hn: {hn:.6f}")
