@@ -756,10 +756,13 @@ It is worth noting that the existence of $(\tilde f_{n,1},\tilde f_{n,2})$ is wi
 Based on (Laha2021), we have the following decomposition of $\psi-$regret:
 \begin{align}
     &SV_\psi^* - SV_\psi(\hat f_{n,1}, \hat f_{n,2};q^*) \notag\\
-    =& \Big\{SV_\psi^* - SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*)\Big\} + 
-    \Big\{[SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) - \hat{SV}_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*)] - [SV_\psi(\hat f_{n,1},\hat f_{n,2};q^*) - \hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)]\Big\} \notag\\
-    &+ \Big\{\hat{SV}_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) - \sup_{(f_1,f_2)\in\mathcal{U}_n}\hat{SV}_\psi(f_1,f_2;q^*) \Big\} + 
-    \Big\{\sup_{(f_1,f_2)\in\mathcal{U}_n}\hat{SV}_\psi(f_1,f_2;q^*) - \hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*) \Big\} \notag\\
+    \leq& \quad SV_\psi^* - \{SV_\psi(\tilde f_{n,1}, \tilde f_{n,2};q^*) - \lambda_n(||\tilde f_{n,1}||_{n,2}^2+||\tilde f_{n,2}||_{n,2}^2)\} \notag\\
+    &+ \{SV_\psi(\tilde f_{n,1}, \tilde f_{n,2};q^*) -\lambda_n(||\tilde f_{n,1}||_{n,2}^2+||\tilde f_{n,2}||_{n,2}^2)\} - \{SV_\psi(\hat f_{n,1}, \hat f_{n,2};q^*) -\lambda_n(||\hat f_{n,1}||_{n,2}^2+||\hat f_{n,2}||_{n,2}^2)\}
+    \notag\\
+    =&\quad \Big\{SV_\psi^* - SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) + \lambda_n(||\tilde f_{n,1}||_{n,2}^2+||\tilde f_{n,2}||_{n,2}^2) \Big\} \notag\\
+     &+ \Big\{[SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) - \hat{SV}_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*)] - [SV_\psi(\hat f_{n,1},\hat f_{n,2};q^*) - \hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)]\Big\} \notag\\
+     &+ \Big\{\hat{SV}_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) - \sup_{(f_1,f_2)\in\mathcal{U}_n}\hat{SV}_\psi(f_1,f_2;q^*) \Big\}\notag\\
+     &+ \Big\{\sup_{(f_1,f_2)\in\mathcal{U}_n}\hat{SV}_\psi(f_1,f_2;q^*) - \hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*) \Big\} \notag\\
     \leq& \Big\{SV_\psi^* - SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*)\Big\} + 
     \Big\{[SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) - SV_\psi(\hat f_{n,1},\hat f_{n,2};q^*)] - [\hat{SV}_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) -\hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)]\Big\} \notag\\
     &+ \Big\{\sup_{(f_1,f_2)\in\mathcal{U}_n}\hat{SV}_\psi(f_1,f_2;q^*) - \hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*) \Big\}.
@@ -833,7 +836,7 @@ $$Z_{2,2} \sim \mathcal{N}(-0.05 + 0.1 Z_{1,1} + 0.1 Z_{1,2} + 0.1 A_2 - 0.2 Y_1
 $$W_{2,1} \sim \mathcal{N}(0.35 + 0.2 W_{1,1} + 0.5 Y_1 + 2.5 U_1 - 0.2 Y_0 + 0.2 U_0, \, 0.2^2)$$
 $$W_{2,2} \sim \mathcal{N}(0.2 + 0.1 W_{1,1} + 0.5 Y_1 - 2.5 U_1 - 0.5 Y_0 - 0.2 U_0, \, 0.2^2)$$
 
-$$Y_2 \sim \mathcal{N}(-2.5 - 2.0 A_2 - 2.0 A_1 - 0.5 A_1 A_2 + 3.0 U_1 + 3.0 U_0, \, 0.2^2)$$
+$$Y_2 \sim \mathcal{N}(-2.5 - 2.0 A_2 - 2.0 A_1 - 0.5 A_1 A_2 + 6.0 U_1 + 6.0 U_0, \, 0.2^2)$$
 
 
 
@@ -874,7 +877,7 @@ $$Y_2 \sim \mathcal{N}(-2.5 - 2.0 A_2 - 2.0 A_1 - 0.5 A_1 A_2 + 3.0 U_1 + 3.0 U_
     For SRA estimator, denote $X_1^{SRA} = \{Y_0\}, X_2^{SRA} = \{\bar Y_1, A_1\}$, and we have the SRA weight
     \[
         \hat{W}^{SRA} := \frac{1}{\hat \pi_1(A_1|X_1^{SRA})\hat \pi_2(A_2|X_2^{SRA})}
-        = \frac{1}{\hat \pi_1(A_1|Y_0)\hat \pi_2(A_2|\bar Y_1, A_1)}，
+        = \frac{1}{\hat \pi_1(A_1|Y_0)\hat \pi_2(A_2|\bar Y_1, A_1)}, 
     \]
     where $\pi_1,\pi_2$ is the propensity score.
     Similarly, for Oracle estimator, denote $X_1^{Oracle} = \{Y_0,U_0\}, X_2^{Oracle}=\{\bar Y_1, \bar U_1, A_1\}$, and we have the Oracle weight

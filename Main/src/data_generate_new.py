@@ -44,7 +44,7 @@ origin_para_set = {
     
     # Huge U effect on Y2 to destroy Naive Estimation. Treat A=1 is actually terrible.
     # ['ones', 'A2', 'A1', 'A2*A1', 'W21', 'W22', 'W11', 'Y1', 'U1', 'Y0', 'U0']
-    'mu_Y2': [1.0, -3.0, -3.0, -2.0, 0, 0, 0, 0, 4.5, 0, 4.5],
+    'mu_Y2': [1.0, -3.0, -3.0, -2.0, 0, 0, 0, 0, 6, 0, 6],
     'sigma_Y2': 0.2
 }
 
