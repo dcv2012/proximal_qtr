@@ -103,8 +103,8 @@ def train_outer_policies(train_loader: DataLoader, val_loader: DataLoader, param
     optimizer_f2 = optim.AdamW(model_f2.parameters(), lr=params['lr'], weight_decay=params['l2'])
                            
     best_val_loss = float('inf')
-    best_f1_state = None
-    best_f2_state = None
+    best_f1_state = model_f1.state_dict()
+    best_f2_state = model_f2.state_dict()
     
     # 早停逻辑
     patience = 20
@@ -157,7 +157,7 @@ def train_outer_policies(train_loader: DataLoader, val_loader: DataLoader, param
                 
             total_val_loss /= len(val_loader)
             
-        if total_val_loss < best_val_loss:
+        if not np.isnan(total_val_loss) and total_val_loss < best_val_loss:
             best_val_loss = total_val_loss
             best_f1_state = model_f1.state_dict()
             best_f2_state = model_f2.state_dict()

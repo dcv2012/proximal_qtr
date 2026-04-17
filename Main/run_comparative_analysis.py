@@ -48,7 +48,7 @@ def plot_boxplot_from_df(df_valid, args, res_dir):
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     
     # Save figure
-    fname = f"boxplot_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_reps{args.mc_reps}.png"
+    fname = f"boxplot_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_{args.dgp}_reps{args.mc_reps}.png"
     save_path = os.path.join(res_dir, fname)
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
@@ -158,17 +158,18 @@ def run_comparative_mc(args):
         
         # Debug Report Output for the repetition
         iter_log = (
-            f"   Perf  -> Prox: {results['Proximal']['true_perf'][-1]:.6f} | "
-            f"SRA: {results['SRA']['true_perf'][-1]:.6f} | "
-            f"Oracle: {results['Oracle']['true_perf'][-1]:.6f}"
+            f"   Perf  -> Prox: {results['Proximal']['true_perf'][-1]:.12f} | "
+            f"SRA: {results['SRA']['true_perf'][-1]:.12f} | "
+            f"Oracle: {results['Oracle']['true_perf'][-1]:.12f}"
         )
         print(iter_log)
         
         # 每次循环结束后随时将结果追加记录到文件
         with open(save_path, 'a') as f:
-            f.write(f"{i+1},Proximal,{results['Proximal']['true_perf'][-1]:.6f},{results['Proximal']['train_est'][-1]:.6f}\n")
-            f.write(f"{i+1},SRA,{results['SRA']['true_perf'][-1]:.6f},{results['SRA']['train_est'][-1]:.6f}\n")
-            f.write(f"{i+1},Oracle,{results['Oracle']['true_perf'][-1]:.6f},{results['Oracle']['train_est'][-1]:.6f}\n")
+            f.write(f"{i+1},Proximal,{results['Proximal']['true_perf'][-1]:.12f},{results['Proximal']['train_est'][-1]:.12f}\n")
+            f.write(f"{i+1},SRA,{results['SRA']['true_perf'][-1]:.12f},{results['SRA']['train_est'][-1]:.12f}\n")
+            f.write(f"{i+1},Oracle,{results['Oracle']['true_perf'][-1]:.12f},{results['Oracle']['train_est'][-1]:.12f}\n")
+            f.write("\n") # 留一行空格
         
     print(f"\n[Simulation Completed] Execution Time: {(time.time() - st_time)/60:.2f} minutes")
     print(f"💾 Raw results securely saved to: {save_path}")
@@ -187,9 +188,9 @@ def analyze_results(csv_path, args, res_dir):
     print(" 🎯 ANALYZING COMPARATIVE RESULTS FROM CSV")
     print("="*85)
     
-    # 只抽取表头为标准格式的行，防止旧格式残留（如包含SUMMARY的文本）
+    # 只抽取表头为标准格式的行，防止旧格式残留（如包含SUMMARY的文本）且跳过空格行
     try:
-        df_all = pd.read_csv(csv_path)
+        df_all = pd.read_csv(csv_path, skip_blank_lines=True)
         # Drop rows where True_Perf is text (like the Old Summary headers if user reused a file)
         df_all['True_Perf'] = pd.to_numeric(df_all['True_Perf'], errors='coerce')
         df_all['Train_Est'] = pd.to_numeric(df_all['Train_Est'], errors='coerce')
@@ -233,7 +234,7 @@ def analyze_results(csv_path, args, res_dir):
     print(f"{'Estimator':<12} | {'Mean V(d_hat)':<18} | {'Std V(d_hat)':<18} | {'Est. Error |V-V_hat|':<22}")
     print("-" * 85)
     for row in summary_data:
-        print(f"{row['Estimator']:<12} | {row['Mean_True_Q_V(d)']:<18.6f} | {row['Std_True_Q_V(d)']:<18.6f} | {row['Estimation_Error_Mean']:<22.6f}")
+        print(f"{row['Estimator']:<12} | {row['Mean_True_Q_V(d)']:<18.12f} | {row['Std_True_Q_V(d)']:<18.12f} | {row['Estimation_Error_Mean']:<22.12f}")
     print("="*85 + "\n")
     
     summary_path = csv_path.replace('.csv', '_summary.csv')

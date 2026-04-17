@@ -128,6 +128,13 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
             f"K_folds={K_folds} is too large for cross-fitting: the smallest observed "
             f"(A1, A2) cell has only {min_combo_count} samples. Reduce K_folds or increase n_train."
         )
+    
+    # 方案A：强制要求切分后 df_train_fold 至少有2个样本，以保证 sub_val_fold 能分到数据
+    required_min = int(np.ceil(2 * K_folds / (K_folds - 1))) if K_folds > 1 else 2
+    if min_combo_count < required_min:
+        raise ValueError(
+            f"Cross-fitting needs at least {required_min} samples for the rarest combo to support internal splits (currently {min_combo_count})."
+        )
 
     kf = StratifiedKFold(n_splits=K_folds, shuffle=True, random_state=seed)
 
@@ -212,9 +219,9 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
             return np.clip(w, low, high)
         return w
 
-    print(f"Trimming q22 weights (1%/99% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
-    q22_train_oof = trim_weights(q22_train_oof)
-    q22_val_preds = trim_weights(q22_val_preds)
+    print(f"Trimming q22 weights (5%/95% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
+    q22_train_oof = trim_weights(q22_train_oof, lower_p=5, upper_p=95)
+    q22_val_preds = trim_weights(q22_val_preds, lower_p=5, upper_p=95)
     print(f"Post-trimming -> Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
 
     # === 3. 第二/三步: 内外层交替优化 (Sequential Classification Learning) ===
@@ -225,8 +232,8 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
     A2_array = df_train['A2'].values
     
     grid_Q = np.unique(np.sort(Y2_array))
-    epsilon_n = 1e-4
-    delta_n = 1e-4
+    epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
+    delta_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = 0.2 / np.log(n_train)
     
     print(f"Alternating Optim Settings -> Grid size: {len(grid_Q)}, epsilon_n: {epsilon_n:.6f}, delta_n: {delta_n:.6f}, hn: {hn:.6f}")
@@ -373,9 +380,9 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
             return np.clip(w, low, high)
         return w
 
-    print(f"Trimming q22 weights (1%/99% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
-    q22_train_oof = trim_weights(q22_train_oof)
-    q22_val_preds = trim_weights(q22_val_preds)
+    print(f"Trimming q22 weights (5%/95% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
+    q22_train_oof = trim_weights(q22_train_oof, lower_p=5, upper_p=95)
+    q22_val_preds = trim_weights(q22_val_preds, lower_p=5, upper_p=95)
 
     # === 3. 内外层交替优化 (复用原版逻辑) ===
     print("\n=== Step 2 & 3: Alternating Optimization for Policy Learning ===")
@@ -384,8 +391,8 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
     A1_array = df_train['A1'].values
     A2_array = df_train['A2'].values
     grid_Q = np.unique(np.sort(Y2_array))
-    epsilon_n = 1e-4
-    delta_n = 1e-4
+    epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
+    delta_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = 0.2 / np.log(n_train)
     
     q_current = np.quantile(Y2_array, tau)

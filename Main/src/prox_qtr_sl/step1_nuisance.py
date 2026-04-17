@@ -246,10 +246,14 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2:
     val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False)
     
     print("Training Final q11 Checkpoint...")
-    model_q11, _ = train_q11(train_loader, val_loader, best_params)
+    model_q11, val_q11 = train_q11(train_loader, val_loader, best_params)
+    if val_q11 == float('inf'):
+        print(f"Warning: Final q11 model diverged for A1={a1}, A2={a2}. Continuing with fallback initial weights.")
     
     print("Training Final q22 Checkpoint...")
-    model_q22, _ = train_q22(train_loader, val_loader, model_q11, best_params)
+    model_q22, val_q22 = train_q22(train_loader, val_loader, model_q11, best_params)
+    if val_q22 == float('inf'):
+        print(f"Warning: Final q22 model diverged for A1={a1}, A2={a2}. Continuing with fallback initial weights.")
     
     # 返回一个预测闭包（可以直接作用在 df 或 tensors 上）
     def predict_q22(df_test):
@@ -261,7 +265,15 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2:
         
         with torch.no_grad():
             preds = model_q22(torch.cat([Z1, Z2, Y0, Y1], dim=1))
-        return preds.cpu().numpy().flatten()
+            
+            
+        preds_np = preds.cpu().numpy().flatten()
+        if not np.isfinite(preds_np).all():
+            print(f"Warning: predict_q22 produced NaN or Inf for combo A1={a1}, A2={a2}. Auto-correcting.")
+            # 将 NaN 替换为 0.0 (无实际贡献)，将 Inf 截断在一定范围内（后续将经过 1%/99% Trimming）
+            preds_np = np.nan_to_num(preds_np, nan=0.0, posinf=1e4, neginf=-1e4)
+            
+        return preds_np
         
     return predict_q22, model_q22, best_params
     
