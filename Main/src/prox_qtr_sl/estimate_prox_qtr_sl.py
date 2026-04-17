@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold, train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split
 import argparse
 import torch
 from torch.utils.data import DataLoader
@@ -12,6 +12,44 @@ from Main.src.prox_qtr_sl.step3_outer import optimize_outer_hyperparams, train_o
 from Main.src.prox_qtr_sl.step2_inner import inner_optimization_grid
 
 import os
+
+
+def make_treatment_strata(df):
+    return df['A1'].astype(str) + "_" + df['A2'].astype(str)
+
+
+def split_fold_with_combo_support(df_fold, test_size=0.2, seed=0):
+    """
+    Create an internal tuning split while guaranteeing that every observed
+    treatment combination in df_fold remains represented in the training split.
+    """
+    rng = np.random.RandomState(seed)
+    val_indices = []
+
+    for _, combo_df in df_fold.groupby(['A1', 'A2'], sort=False):
+        combo_indices = combo_df.index.to_numpy().copy()
+        rng.shuffle(combo_indices)
+
+        if len(combo_indices) <= 1:
+            continue
+
+        n_val = int(round(len(combo_indices) * test_size))
+        n_val = max(1, n_val)
+        n_val = min(n_val, len(combo_indices) - 1)
+        val_indices.extend(combo_indices[:n_val].tolist())
+
+    if len(val_indices) == 0 or len(val_indices) == len(df_fold):
+        raise ValueError(
+            "Unable to create an internal tuning split with treatment-combination support. "
+            "Increase n_train or reduce K_folds."
+        )
+
+    val_index_set = set(val_indices)
+    train_indices = [idx for idx in df_fold.index if idx not in val_index_set]
+
+    sub_train_fold = df_fold.loc[train_indices].reset_index(drop=True)
+    sub_val_fold = df_fold.loc[val_indices].reset_index(drop=True)
+    return sub_train_fold, sub_val_fold
 
 def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed, df_train):
     
@@ -78,11 +116,22 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
     print("\n=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===")
     
     q22_train_oof = np.zeros(len(df_train))
+    q22_train_oof_counts = np.zeros(len(df_train), dtype=int)
     q22_val_preds = np.zeros(len(df_val))
-    
-    kf = KFold(n_splits=K_folds, shuffle=True, random_state=seed)
-    
-    for fold, (train_idx, oof_idx) in enumerate(kf.split(df_train)):
+    q22_val_pred_counts = np.zeros(len(df_val), dtype=int)
+
+    train_strata = make_treatment_strata(df_train)
+    combo_counts = train_strata.value_counts().sort_index()
+    min_combo_count = int(combo_counts.min())
+    if min_combo_count < K_folds:
+        raise ValueError(
+            f"K_folds={K_folds} is too large for cross-fitting: the smallest observed "
+            f"(A1, A2) cell has only {min_combo_count} samples. Reduce K_folds or increase n_train."
+        )
+
+    kf = StratifiedKFold(n_splits=K_folds, shuffle=True, random_state=seed)
+
+    for fold, (train_idx, oof_idx) in enumerate(kf.split(df_train, train_strata)):
         print(f"\n>> Cross-Fitting Fold {fold+1}/{K_folds}")
         df_train_fold = df_train.iloc[train_idx].reset_index(drop=True)
         df_oof_fold = df_train.iloc[oof_idx].reset_index(drop=True)
@@ -90,7 +139,9 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
         # 警告：为了严格满足 Cross-Fitting 的无偏性(独立性)假设，被留出评估的 df_oof_fold 绝对不能参与前期的任何调参!
         # 否则通过 Optuna 和早停机制，模型会泄露关于本折目标集的信息，从而破坏双重健壮机制。
         # 正确做法：从不互斥的训练集(df_train_fold)内部自己切出完全独立于 OOF 的 20% 作为 tuning 验证集。
-        sub_train_fold, sub_val_fold = train_test_split(df_train_fold, test_size=0.2, random_state=seed)
+        sub_train_fold, sub_val_fold = split_fold_with_combo_support(
+            df_train_fold, test_size=0.2, seed=seed + fold
+        )
         
         # 针对每个治疗方案对建立模型
         for a1 in [1, -1]:
@@ -111,7 +162,8 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
                     # 取回原数据集级别的 index
                     global_indices = df_train.iloc[oof_idx][oof_sub_mask.values].index
                     preds_part = predict_q22_fn(matching_oof_data)
-                    q22_train_oof[global_indices] += preds_part
+                    q22_train_oof[global_indices] = preds_part
+                    q22_train_oof_counts[global_indices] += 1
                     
                 # 对于独立的 validation 集进行普通的多模型集平均 (Ensemble)
                 val_sub_mask = (df_val['A1'] == a1) & (df_val['A2'] == a2)
@@ -120,7 +172,36 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
                     global_val_idx = df_val[val_sub_mask.values].index
                     
                     preds_val_part = predict_q22_fn(matching_val_df)
-                    q22_val_preds[global_val_idx] += preds_val_part / K_folds
+                    q22_val_preds[global_val_idx] += preds_val_part
+                    q22_val_pred_counts[global_val_idx] += 1
+
+    uncovered_train_mask = q22_train_oof_counts != 1
+    if np.any(uncovered_train_mask):
+        uncovered_summary = (
+            df_train.loc[uncovered_train_mask, ['A1', 'A2']]
+            .value_counts()
+            .sort_index()
+            .to_dict()
+        )
+        raise ValueError(
+            "Cross-fitting failed to produce exactly one OOF q22 prediction per training sample. "
+            f"Uncovered or duplicated cells: {uncovered_summary}"
+        )
+
+    uncovered_val_mask = q22_val_pred_counts == 0
+    if np.any(uncovered_val_mask):
+        uncovered_val_summary = (
+            df_val.loc[uncovered_val_mask, ['A1', 'A2']]
+            .value_counts()
+            .sort_index()
+            .to_dict()
+        )
+        raise ValueError(
+            "Validation ensemble failed to produce q22 predictions for some samples. "
+            f"Missing cells: {uncovered_val_summary}"
+        )
+
+    q22_val_preds = q22_val_preds / q22_val_pred_counts
 
 
     # === 2.5 Weight Trimming (Option A: 1%/99% Trimming) ===
