@@ -68,7 +68,7 @@ def run_comparative_mc(args):
     
     if args.dgp == "S1":
         from Main.src.data_generate import dynamic_intervened_data_gen, adjust_para_set_for_new_coding, origin_para_set
-    else:
+    elif args.dgp == "S2":
         from Main.src.data_generate_new import dynamic_intervened_data_gen, adjust_para_set_for_new_coding, origin_para_set
     
     params = adjust_para_set_for_new_coding(origin_para_set)
@@ -94,6 +94,7 @@ def run_comparative_mc(args):
     
     for i in range(args.mc_reps):
         current_seed = args.seed + i
+        eval_seed = current_seed + 99999
         print(f"\n[{i+1}/{args.mc_reps}] MC Repetition Seed: {current_seed}")
         
         # === 1. Proximal QTR ===
@@ -112,7 +113,8 @@ def run_comparative_mc(args):
                 phi_type=args.phi_type, model_type=args.model_type, save_models=False,
                 dgp=args.dgp
             )
-        df_eval_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device)
+        
+        df_eval_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device, seed=eval_seed)
         results["Proximal"]["true_perf"].append(np.quantile(df_eval_p['Y2'], args.tau))
         results["Proximal"]["train_est"].append(q_est_p)
         
@@ -132,7 +134,7 @@ def run_comparative_mc(args):
                 phi_type=args.phi_type, model_type=args.model_type, save_models=False,
                 dgp=args.dgp
             )
-        df_eval_s = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_s, f2=f2_s, device=device)
+        df_eval_s = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_s, f2=f2_s, device=device, seed=eval_seed)
         results["SRA"]["true_perf"].append(np.quantile(df_eval_s['Y2'], args.tau))
         results["SRA"]["train_est"].append(q_est_s)
         
@@ -152,7 +154,7 @@ def run_comparative_mc(args):
                 phi_type=args.phi_type, model_type=args.model_type, save_models=False,
                 dgp=args.dgp
             )
-        df_eval_o = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_o, f2=f2_o, device=device)
+        df_eval_o = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_o, f2=f2_o, device=device, seed=eval_seed)
         results["Oracle"]["true_perf"].append(np.quantile(df_eval_o['Y2'], args.tau))
         results["Oracle"]["train_est"].append(q_est_o)
         

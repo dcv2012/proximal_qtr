@@ -200,8 +200,10 @@ def intervened_data_gen(sample_size: int, para_set: dict, a: list = [1, 1]) -> p
     return df
 
 
-def dynamic_intervened_data_gen(sample_size: int, para_set: dict, f1=None, f2=None, device='cpu') -> pd.DataFrame:
+def dynamic_intervened_data_gen(sample_size: int, para_set: dict, f1=None, f2=None, device='cpu', seed=None) -> pd.DataFrame:
     """动态策略控制的反事实数据生成"""
+    if seed is not None:
+        np.random.seed(seed)
     N = sample_size
     Y0 = np.random.normal(para_set['mu_Y0'], para_set['sigma_Y0'], N)
     U0 = np.random.normal(para_set['mu_U0'], para_set['sigma_U0'], N)

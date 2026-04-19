@@ -231,7 +231,11 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
     A1_array = df_train['A1'].values
     A2_array = df_train['A2'].values
     
-    grid_Q = np.unique(np.sort(Y2_array))
+    grid_Q_full = np.unique(np.sort(Y2_array))
+    # 限制搜索范围到合理的分位数区间，防止 q22 负值导致 grid search 跑到极端尾部
+    q_lower = np.quantile(Y2_array, max(0.01, tau - 0.3))
+    q_upper = np.quantile(Y2_array, min(0.99, tau + 0.3))
+    grid_Q = grid_Q_full[(grid_Q_full >= q_lower) & (grid_Q_full <= q_upper)]
     epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
     delta_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = 0.2 / np.log(n_train)
@@ -390,7 +394,10 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
     Y2_array = df_train['Y2'].values
     A1_array = df_train['A1'].values
     A2_array = df_train['A2'].values
-    grid_Q = np.unique(np.sort(Y2_array))
+    grid_Q_full = np.unique(np.sort(Y2_array))
+    q_lower = np.quantile(Y2_array, max(0.01, tau - 0.3))
+    q_upper = np.quantile(Y2_array, min(0.99, tau + 0.3))
+    grid_Q = grid_Q_full[(grid_Q_full >= q_lower) & (grid_Q_full <= q_upper)]
     epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
     delta_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = 0.2 / np.log(n_train)

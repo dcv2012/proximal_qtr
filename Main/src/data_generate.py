@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import torch
 from scipy.stats import norm, multivariate_normal, uniform, randint
 import scipy.stats as stats
 
@@ -225,11 +226,12 @@ def intervened_data_gen(sample_size: int, para_set: dict, a: list = [1, 1]) -> p
     })
     return df
 
-def dynamic_intervened_data_gen(sample_size: int, para_set: dict, f1=None, f2=None, device='cpu') -> pd.DataFrame:
+def dynamic_intervened_data_gen(sample_size: int, para_set: dict, f1=None, f2=None, device='cpu', seed=None) -> pd.DataFrame:
     """
     生成动态干预反事实数据。治疗 A1 和 A2 严格由传入的策略模型 f1 和 f2 动态决断。
     """
-    import torch
+    if seed is not None:
+        np.random.seed(seed)
     N = sample_size
     Y0 = np.random.normal(para_set['mu_Y0'], para_set['sigma_Y0'], N)
     U0 = np.random.normal(para_set['mu_U0'], para_set['sigma_U0'], N)
