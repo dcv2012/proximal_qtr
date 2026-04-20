@@ -51,26 +51,22 @@ def extract_proxy(df: pd.DataFrame, prefix: str) -> torch.Tensor:
 
 def prepare_tensors(df: pd.DataFrame, a1: int, a2: int) -> TensorDataset:
     """
-    仅筛选 A1 == a1 的数据，避免不必要的网络结构训练。
-    提取出张量用于 q11 和 q22 的训练。
+    使用全量数据构建张量集，利用 tt1 和 tt2 来过滤或惩罚样本，保留因果调整中不可或缺的协变量基础分布。
     """
-    df_filtered = df[df['A1'] == a1].copy()
-    
-    Y0 = torch.tensor(df_filtered['Y0'].values, dtype=torch.float32).unsqueeze(1)
-    Y1 = torch.tensor(df_filtered['Y1'].values, dtype=torch.float32).unsqueeze(1)
+    Y0 = torch.tensor(df['Y0'].values, dtype=torch.float32).unsqueeze(1)
+    Y1 = torch.tensor(df['Y1'].values, dtype=torch.float32).unsqueeze(1)
     
     # 动态支持 Z1, W1, Z2, W2 的高维扩展
-    Z1 = extract_proxy(df_filtered, 'Z1')
-    W1 = extract_proxy(df_filtered, 'W1')
-    Z2 = extract_proxy(df_filtered, 'Z2')
-    W2 = extract_proxy(df_filtered, 'W2')
+    Z1 = extract_proxy(df, 'Z1')
+    W1 = extract_proxy(df, 'W1')
+    Z2 = extract_proxy(df, 'Z2')
+    W2 = extract_proxy(df, 'W2')
     
-    # 因为 A1 已经被筛选成了常数, 处理 tt1(目标指示器) 时实际上始终是 1。
-    # 这里保持逻辑，对于 q11: I(A1=a1)
-    tt1 = torch.tensor((df_filtered['A1'] == a1).values, dtype=torch.float32).unsqueeze(1)
+    # tt1: I(A1=a1) 全分布指示掩码
+    tt1 = torch.tensor((df['A1'] == a1).values, dtype=torch.float32).unsqueeze(1)
     
-    # tt2: I(A2=a2)
-    tt2 = torch.tensor((df_filtered['A2'] == a2).values, dtype=torch.float32).unsqueeze(1)
+    # tt2: I(A1=a1 and A2=a2) 序贯时序掩码
+    tt2 = torch.tensor(((df['A1'] == a1) & (df['A2'] == a2)).values, dtype=torch.float32).unsqueeze(1)
     
     return TensorDataset(Z1, Y0, W1, tt1, Z2, Y1, W2, tt2)
 
@@ -155,7 +151,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
             kernel_inputs2 = torch.cat([W1, W2, Y0, Y1], dim=1)
             kernel_matrix2 = calculate_kernel_matrix(kernel_inputs2)
             
-            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_pred, kernel_matrix2, loss_name='U_statistic'))
+            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_pred * tt1, kernel_matrix2, loss_name='U_statistic'))
             
             loss2.backward()
             optimizer.step()
@@ -170,7 +166,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
                 pred2 = model(torch.cat([Z1, Z2, Y0, Y1], dim=1))
                 kernel_matrix2 = calculate_kernel_matrix(torch.cat([W1, W2, Y0, Y1], dim=1))
                 
-                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_pred, kernel_matrix2, loss_name='U_statistic'))
+                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_pred * tt1, kernel_matrix2, loss_name='U_statistic'))
                 total_val_loss += v_loss.item()
             total_val_loss /= len(val_loader)
             

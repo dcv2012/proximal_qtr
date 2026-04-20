@@ -26,10 +26,13 @@ def inner_optimization_grid(Y2: np.ndarray, q22_vals: np.ndarray, phi1: np.ndarr
     
     # 提前连乘权重加速广播运算
     q22_phi_prod = q22_vals * phi1 * phi2
+    norm_factor = np.mean(q22_phi_prod)
     
     # 使用 numpy broadcast 高效计算所有 grid 点的生存值.
+    # 引入 Hajek Estimator 自归一化机制，修正不完美的经验均值，严格限定概率界限在 [0,1] 内
     # (Y2[:, None] > grid_Q[None, :]) 返回 [n_samples, len(grid_Q)] 的 bool mask.
-    sv_array = np.mean((Y2[:, None] > grid_Q[None, :]) * q22_phi_prod[:, None], axis=0)
+    raw_sv_array = np.mean((Y2[:, None] > grid_Q[None, :]) * q22_phi_prod[:, None], axis=0)
+    sv_array = raw_sv_array / (norm_factor + 1e-10)
     
     best_idx = np.argmin(np.abs(sv_array - (1 - tau)))
     q_new = grid_Q[best_idx]
