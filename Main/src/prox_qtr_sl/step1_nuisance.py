@@ -262,7 +262,6 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2:
         with torch.no_grad():
             preds = model_q22(torch.cat([Z1, Z2, Y0, Y1], dim=1))
             
-            
         preds_np = preds.cpu().numpy().flatten()
         if not np.isfinite(preds_np).all():
             print(f"Warning: predict_q22 produced NaN or Inf for combo A1={a1}, A2={a2}. Auto-correcting.")

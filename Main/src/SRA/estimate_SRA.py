@@ -81,10 +81,13 @@ def train_policy_SRA(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=
         torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)
     ], dim=1).to(device_compute)
     
+    q_initial = (l_bound + u_bound) / 2.0
+    print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (SRA) ---")
+    best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_initial, n_trials=10, phi_type=phi_type, model_type=model_type)
+    
     for it in range(max_alt_iters):
         q_current = (l_bound + u_bound) / 2.0
         print(f"--- Iter {it+1}/{max_alt_iters} Binary Search m (q) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}] ---")
-        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
         ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
         ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
         f1, f2, val_loss = train_outer_policies(DataLoader(ds_t, 128, True), DataLoader(ds_v, 128, False), best_p, phi_type, model_type)
@@ -97,7 +100,11 @@ def train_policy_SRA(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=
         phi1 = stats.norm.cdf((A1_array * f1_train_out) / hn)
         phi2 = stats.norm.cdf((A2_array * f2_train_out) / hn)
             
-        sv_val = np.mean((Y2_array > q_current) * ipw_train_oof * phi1 * phi2)
+        # SRA 版 Hajek Self-Normalized IPW
+        ipw_phi_prod = ipw_train_oof * phi1 * phi2
+        norm_factor = np.mean(ipw_phi_prod)
+        raw_sv_val = np.mean((Y2_array > q_current) * ipw_phi_prod)
+        sv_val = raw_sv_val / (norm_factor + 1e-10)
         best_sv = sv_val
         print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
         
@@ -172,10 +179,13 @@ def train_policy_SRA_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.5, 
         torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)
     ], dim=1).to(device_compute)
     
+    q_initial = (l_bound + u_bound) / 2.0
+    print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF) ---")
+    best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_initial, n_trials=10, phi_type=phi_type, model_type=model_type)
+    
     for it in range(max_alt_iters):
         q_current = (l_bound + u_bound) / 2.0
         print(f"--- Iter {it+1}/{max_alt_iters} Binary Search m (q) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}] ---")
-        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
         ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
         ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
         f1, f2, _ = train_outer_policies(DataLoader(ds_t, 128, True), DataLoader(ds_v, 128, False), best_p, phi_type, model_type)
@@ -189,7 +199,11 @@ def train_policy_SRA_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.5, 
         phi1 = stats.norm.cdf((A1_array * f1_out) / hn)
         phi2 = stats.norm.cdf((A2_array * f2_out) / hn)
         
-        sv_val = np.mean((Y2_array > q_current) * ipw_train_oof * phi1 * phi2)
+        # SRA 版 Hajek Self-Normalized IPW
+        ipw_phi_prod = ipw_train_oof * phi1 * phi2
+        norm_factor = np.mean(ipw_phi_prod)
+        raw_sv_val = np.mean((Y2_array > q_current) * ipw_phi_prod)
+        sv_val = raw_sv_val / (norm_factor + 1e-10)
         best_sv = sv_val
         print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
         

@@ -219,9 +219,9 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
             return np.clip(w, low, high)
         return w
 
-    print(f"Trimming q22 weights (5%/95% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
-    q22_train_oof = trim_weights(q22_train_oof, lower_p=5, upper_p=95)
-    q22_val_preds = trim_weights(q22_val_preds, lower_p=5, upper_p=95)
+    print(f"Trimming q22 weights (1%/99% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
+    q22_train_oof = trim_weights(q22_train_oof, lower_p=1, upper_p=99)
+    q22_val_preds = trim_weights(q22_val_preds, lower_p=1, upper_p=99)
     print(f"Post-trimming -> Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
 
     # === 3. 第二/三步: 内外层交替优化 (Sequential Classification Learning) ===
@@ -259,15 +259,15 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
         torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)
     ], dim=1).to(device_compute)
     
+    print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks ---")
+    # 架构和超参数搜索只需在开始时（基于初始的 q_current）执行一次，完全没有必要在每次交替中重复搜索 10x200 epoch。
+    best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
+                                             q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
+    print(f"Optimal configs locked: {best_params}")
+    
     for it in range(max_alt_iters):
         print(f"\n--- Alternating Optim Iteration {it+1}/{max_alt_iters} ---")
         print(f"Current q^(k-1) = {q_current:.6f}")
-        
-        # Outer Level
-        best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
-                                                 q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
-        
-        print(f"Optimal configs: {best_params}")
         
         train_dataset = prepare_outer_tensors(df_train, q22_train_oof, q_current)
         val_dataset = prepare_outer_tensors(df_val, q22_val_preds, q_current)
@@ -385,9 +385,9 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
             return np.clip(w, low, high)
         return w
 
-    print(f"Trimming q22 weights (5%/95% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
-    q22_train_oof = trim_weights(q22_train_oof, lower_p=5, upper_p=95)
-    q22_val_preds = trim_weights(q22_val_preds, lower_p=5, upper_p=95)
+    print(f"Trimming q22 weights (1%/99% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
+    q22_train_oof = trim_weights(q22_train_oof, lower_p=1, upper_p=99)
+    q22_val_preds = trim_weights(q22_val_preds, lower_p=1, upper_p=99)
 
     # === 3. 内外层交替优化 (复用原版逻辑) ===
     print("\n=== Step 2 & 3: Alternating Optimization for Policy Learning ===")
@@ -417,13 +417,15 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
         torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)
     ], dim=1).to(device_compute)
     
+    print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks ---")
+    best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
+                                             q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
+    print(f"Optimal configs locked: {best_params}")
+    
     for it in range(max_alt_iters):
         print(f"\n--- Alternating Optim Iteration {it+1}/{max_alt_iters} ---")
         print(f"Current q^(k-1) = {q_current:.6f}")
 
-        best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
-                                                 q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
-        
         train_dataset = prepare_outer_tensors(df_train, q22_train_oof, q_current)
         val_dataset = prepare_outer_tensors(df_val, q22_val_preds, q_current)
         train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
