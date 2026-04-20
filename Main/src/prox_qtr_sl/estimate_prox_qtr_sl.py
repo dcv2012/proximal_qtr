@@ -236,8 +236,9 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
     q_lower = np.quantile(Y2_array, max(0.01, tau - 0.3))
     q_upper = np.quantile(Y2_array, min(0.99, tau + 0.3))
     grid_Q = grid_Q_full[(grid_Q_full >= q_lower) & (grid_Q_full <= q_upper)]
-    epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
-    delta_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
+
+    epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
+    delta_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = 0.2 / np.log(n_train)
     
     print(f"Alternating Optim Settings -> Grid size: {len(grid_Q)}, epsilon_n: {epsilon_n:.6f}, delta_n: {delta_n:.6f}, hn: {hn:.6f}")
@@ -398,8 +399,8 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
     q_lower = np.quantile(Y2_array, max(0.01, tau - 0.3))
     q_upper = np.quantile(Y2_array, min(0.99, tau + 0.3))
     grid_Q = grid_Q_full[(grid_Q_full >= q_lower) & (grid_Q_full <= q_upper)]
-    epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
-    delta_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
+    epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
+    delta_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = 0.2 / np.log(n_train)
     
     q_current = np.quantile(Y2_array, tau)
