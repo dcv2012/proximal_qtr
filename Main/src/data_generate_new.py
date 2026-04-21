@@ -32,9 +32,9 @@ origin_para_set = {
     
     # Z2 is a STRONG proxy for U1 -> Helps q22 (PIPW)
     'mu_Z21': [0.2, 0, 0, 0.2, 0.2, 2.5, 0.2, 0.2, -0.5],
-    'sigma_Z21': 0.2,
+    'sigma_Z21': 1.0,
     'mu_Z22': [-0.1, 0.1, 0.1, 0.2, -0.2, -0.5, -0.1, 0.2, 0.5],
-    'sigma_Z22': 0.2,
+    'sigma_Z22': 1.0,
     
     # W2 is a STRONG proxy for U1 -> Helps h22 (PHA, PMR, cPMR)
     'mu_W21': [0.35, 0.2, 0.5, 2.5, -0.2, 0.2],

@@ -341,7 +341,7 @@ According to the risk minimization criteria, we can estimate $q_{11}$ and $q_{22
     & \hat q_{11}=\argmin_{q_{11}} \frac{1}{n(n-1)}\sum_{i,j=1, i\neq j}^n (I(A_{1,i}=a_{1,i})q_{11,i}-1)(I(A_{1,j}=a_{1,j})q_{11,j}-1)\cdot k_{1,ij} + \lambda_1||q_{11}||_2^2, \label{q11hat}\\
     & \hat q_{22}=\argmin_{q_{22}} \frac{1}{n(n-1)}\sum_{i,j=1, i \neq j}^n (I(A_{2,i}=a_{1,i})q_{22,i}-\hat q_{11,i})(I(A_{2,j}=a_{2,j})q_{22,j}-\hat q_{11,j})\cdot k_{2,ij} + \lambda_2||q_{22}||_2^2, \label{q22hat}
 \end{align}
-where $q_{tt,i}=q_{tt}(\bar Z_{t,i}, \bar Y_{t-1,i}, \bar A_{t,i})$,  $k_{t,ij}=((\bar A_{t-1,i}, \bar W_{t,i},\bar Y_{t-1,i}),(\bar A_{t-1,j}, \bar W_{t,j},\bar Y_{t-1,j}))$ , and $\lambda_1, \lambda_2$ are the tuning parameters that control the $L_2-$penalty terms for $t=1,2$.
+where $q_{tt,i}=q_{tt}(\bar Z_{t,i}, \bar Y_{t-1,i}, \bar A_{t,i})$,  $k_{t,ij}=((\bar A_{t-1,i}, \bar W_{t,i},\bar Y_{t-1,i}),(\bar A_{t-1,j}, \bar W_{t,j},\bar Y_{t-1,j}))$ , and $\lambda_1, \lambda_2$ are the tuning parameters that control the $L_2-$penalty terms (actually weight decays) for $t=1,2$.
 In practice, we use neural networks to estimate the first $\hat q_{11}$ and then $\hat q_{22}$.
 
 
@@ -799,7 +799,29 @@ Now we can summarize our $\psi-$risk bound as follows:
 \begin{align}
     SV_\psi^* - SV_\psi(\hat f_{n,1}, \hat f_{n,2};q) \leq \textbf{App}_n + \textbf{Est}_n + \textbf{Nuis}_n + \textbf{Opt}_n. \label{riskbound}
 \end{align}
-Under the above framework of error decomposition, we consider $\mathcal{U}_n$ be the class of neural networks, which is one of the most popular and effective nonparametric models when facing non-concave optimization.
+This error decomposition framework provides a general theoretical guarantee for any abstract function class $\mathcal{U}_n$ by showing how different types of errors are formulated.
+But now, we need to specify a concrete function space when implementing the practical optimization.
+It is crucial to note that the introduction of the surrogate loss $\psi(\cdot)$ fundamentally transforms our policy learning objective into a non-convex optimization problem, which leads to the failure of traditional nonparametric methods such as kernel methods equipped with RKHS.
+Consequently, we consider $\mathcal{U}_n$ to be a class of neural networks, which is one of the most popular and effective nonparametric methods for solving non-convex optimization.
+
+Now we need to refine our notations to be compatible with the class of neural networks in the following discussion.
+In line with (Schmidt-Hieber2020), we denote $\mathcal{U}_n=(\mathcal{U}_{1n},\mathcal{U}_{2n})$ as the classes of RELU networks $\mathcal{F}(L,\mathbf{p},s,F_{t})$:
+\begin{align}
+    &\mathcal{F}(L,\mathbf{p},s,F_{t}) \notag\\
+    =& \Big\{f_{t}: \mathbb{R}^{p_0}\to\mathbb{R}^{p_{L+1}},\quad \mathbf{x} \mapsto f_t(\mathbf{x})=W_L\sigma_L W_{L-1}\sigma_{L-1} \cdots W_1\sigma_1W_0\mathbf{x} \\
+    &\text{\quad satisfies\quad} \max_{j=0,\dots,L}||W_j||_\infty \leq 1, \sum_{j=0}^L||W_j||_0 \leq s, \big|\big| |f_t|_\infty \big|\big|_{\infty} \leq F_t \Big\}, \text{\quad for $t$=1,2},
+\end{align}
+where $L$ is the network depth, $\mathbf{p}=(p_0,\dots,p_{L+1})$ is the network width vector, $s$ is the network sparsity,
+$||W_j||_0$ denotes the number of non-zero entries of the weight matrix of $j-$th layer $W_j$, and $\big|\big| |f_t|_\infty \big|\big|_{\infty}$ denotes the sup-norm of the function $|f(\mathbf{x})|_\infty$ and is uniformly bounded by $F_t$.
+According to (Neyshabur2015, etc), the $L_2$-penalty of a neural network is actually imposed on $W_j$, which can be reformulated as $1$
+
+
+
+
+
+
+
+
 To bound $\eqref{riskbound}$, we need the following assumptions.
 \begin{ass}[]
     There exists a constant $C_m > 0$ such that $||q_{tt}||_\infty < C_m$ for $t=1,2$. \label{assbound1}
@@ -889,8 +911,8 @@ $$U_1 \sim \mathcal{N}(0.2 + 0.1 A_1 + 0.8 U_0, \, 0.5^2)$$
 
 $$P(A_2 = 1 \mid Y_0, U_0, Y_1, U_1) = \text{expit}(-0.2 + 0.02 Y_0 + 0.03 U_0 - 0.03 Y_1 + 0.5 U_1)$$
 
-$$Z_{2,1} \sim \mathcal{N}(0.4 + 0.1 A_2 + 0.2 Y_1 + 2.5 U_1 + 0.1 A_1 + 0.2 Y_0 - 0.5 U_0, \, 0.2^2)$$
-$$Z_{2,2} \sim \mathcal{N}(-0.05 + 0.1 Z_{1,1} + 0.1 Z_{1,2} + 0.1 A_2 - 0.2 Y_1 - 0.5 U_1 - 0.05 A_1 + 0.2 Y_0 + 0.5 U_0, \, 0.2^2)$$
+$$Z_{2,1} \sim \mathcal{N}(0.4 + 0.1 A_2 + 0.2 Y_1 + 2.5 U_1 + 0.1 A_1 + 0.2 Y_0 - 0.5 U_0, \, 1.0^2)$$
+$$Z_{2,2} \sim \mathcal{N}(-0.05 + 0.1 Z_{1,1} + 0.1 Z_{1,2} + 0.1 A_2 - 0.2 Y_1 - 0.5 U_1 - 0.05 A_1 + 0.2 Y_0 + 0.5 U_0, \, 1.0^2)$$
 
 $$W_{2,1} \sim \mathcal{N}(0.35 + 0.2 W_{1,1} + 0.5 Y_1 + 2.5 U_1 - 0.2 Y_0 + 0.2 U_0, \, 0.2^2)$$
 $$W_{2,2} \sim \mathcal{N}(0.2 + 0.1 W_{1,1} + 0.5 Y_1 - 2.5 U_1 - 0.5 Y_0 - 0.2 U_0, \, 0.2^2)$$
