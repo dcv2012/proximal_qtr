@@ -32,6 +32,7 @@ def parse_arguments():
     parser.add_argument("--k_folds", type=int, default=2, help="Number of folds for cross-fitting")
     parser.add_argument("--max_alt_iters", type=int, default=20, help="Max iterations for SCL optimization")
     parser.add_argument("--dgp", type=str, choices=["S1", "S2"], default="S2", help="Data generation process version to use (S1=data_generate, S2=data_generate_new)")
+    parser.add_argument("--optim_mode", type=str, choices=["scl", "ao"], default="ao", help="Optimization framework for SRA/Oracle (scl=Binary Search, ao=Grid Search)")
     parser.add_argument("--no_cf", action="store_true", help="Skip cross-fitting for Proximal QTR (faster)")
     
     return parser.parse_args()
@@ -125,14 +126,14 @@ def run_comparative_mc(args):
                 n_train=args.n_train, seed=current_seed,
                 max_alt_iters=args.max_alt_iters, tau=args.tau, 
                 phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-                dgp=args.dgp
+                dgp=args.dgp, optim_mode=args.optim_mode
             )
         else:
             f1_s, f2_s, q_est_s, _ = train_policy_SRA(
                 n_train=args.n_train, seed=current_seed, K_folds=args.k_folds,
                 max_alt_iters=args.max_alt_iters, tau=args.tau, 
                 phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-                dgp=args.dgp
+                dgp=args.dgp, optim_mode=args.optim_mode
             )
         df_eval_s = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_s, f2=f2_s, device=device, seed=eval_seed)
         results["SRA"]["true_perf"].append(np.quantile(df_eval_s['Y2'], args.tau))
@@ -145,14 +146,14 @@ def run_comparative_mc(args):
                 n_train=args.n_train, seed=current_seed,
                 max_alt_iters=args.max_alt_iters, tau=args.tau, 
                 phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-                dgp=args.dgp
+                dgp=args.dgp, optim_mode=args.optim_mode
             )
         else:
             f1_o, f2_o, q_est_o, _ = train_policy_Oracle(
                 n_train=args.n_train, seed=current_seed, K_folds=args.k_folds,
                 max_alt_iters=args.max_alt_iters, tau=args.tau, 
                 phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-                dgp=args.dgp
+                dgp=args.dgp, optim_mode=args.optim_mode
             )
         df_eval_o = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_o, f2=f2_o, device=device, seed=eval_seed)
         results["Oracle"]["true_perf"].append(np.quantile(df_eval_o['Y2'], args.tau))

@@ -9,6 +9,7 @@ import os
 
 
 from Main.src.Oracle.step1_nuisance import estimate_nuisance
+from Main.src.Oracle.step2_inner import inner_optimization_grid
 from Main.src.Oracle.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 
 def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed):
@@ -20,7 +21,7 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
     torch.save({'state_dict': f2.state_dict(), 'hyperparams': best_params}, os.path.join(models_dir, f"f2_{config_str}.pt"))
     print(f"📁 Oracle Policy Models saved with prefix: {config_str}")
 
-def train_policy_Oracle(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2"):
+def train_policy_Oracle(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2", optim_mode="scl"):
     """
     运行基于 Oracle 的全观察（含U）环境策略学习。
     """
@@ -64,17 +65,7 @@ def train_policy_Oracle(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, t
     A1_array = df_train['A1'].values
     A2_array = df_train['A2'].values
     
-    l_bound = np.min(Y2_array)
-    u_bound = np.max(Y2_array)
-    epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
-    kappa_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = 0.2 / np.log(n_train)
-    
-    print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}, hn: {hn:.6f}")
-    
-    q_current = None
-    f1, f2 = None, None
-    best_sv = 0.0
     
     device_compute = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     H1_train_tensor = torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1).to(device_compute)
@@ -84,51 +75,132 @@ def train_policy_Oracle(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, t
         torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)
     ], dim=1).to(device_compute)
     
-    q_initial = (l_bound + u_bound) / 2.0
-    print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle) ---")
-    best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_initial, n_trials=10, phi_type=phi_type, model_type=model_type)
+    q_current = None
+    f1, f2 = None, None
+    best_sv = 0.0
     
-    for it in range(max_alt_iters):
-        q_current = (l_bound + u_bound) / 2.0
-        print(f"--- Iter {it+1}/{max_alt_iters} Binary Search m (q) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}] ---")
-        ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
-        ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
-        f1, f2, val_loss = train_outer_policies(DataLoader(ds_t, 128, True), DataLoader(ds_v, 128, False), best_p, phi_type, model_type)
-        f1.eval()
-        f2.eval()
-        with torch.no_grad():
-            f1_train_out = f1(H1_train_tensor).cpu().numpy().flatten()
-            f2_train_out = f2(H2_train_tensor).cpu().numpy().flatten()
-
-        phi1 = stats.norm.cdf((A1_array * f1_train_out) / hn)
-        phi2 = stats.norm.cdf((A2_array * f2_train_out) / hn)
-            
-        # Oracle 版 Hajek Self-Normalized IPW
-        ipw_phi_prod = ipw_train_oof * phi1 * phi2
-        norm_factor = np.mean(ipw_phi_prod)
-        raw_sv_val = np.mean((Y2_array > q_current) * ipw_phi_prod)
-        sv_val = raw_sv_val / (norm_factor + 1e-10)
-        best_sv = sv_val
-        print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
+    if optim_mode == "scl":
+        l_bound = np.min(Y2_array)
+        u_bound = np.max(Y2_array)
+        epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
+        kappa_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
         
-        if abs(sv_val - (1 - tau)) <= epsilon_n:
-            print(f"✅ Oracle SCL Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
-            break
-        elif sv_val >= (1 - tau):
-            l_bound = q_current
-        else:
-            u_bound = q_current
+        print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}, hn: {hn:.6f}")
+        
+        q_initial = (l_bound + u_bound) / 2.0
+        print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle SCL) ---")
+        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_initial, n_trials=10, phi_type=phi_type, model_type=model_type)
+        
+        for it in range(max_alt_iters):
+            q_current = (l_bound + u_bound) / 2.0
+            print(f"--- Iter {it+1}/{max_alt_iters} Binary Search m (q) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}] ---")
+            ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
+            ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
+            f1, f2, _ = train_outer_policies(DataLoader(ds_t, 128, True), DataLoader(ds_v, 128, False), best_p, phi_type, model_type)
             
-        if (u_bound - l_bound) <= kappa_n:
-            print(f"✅ Oracle SCL Converged by kappa width: {u_bound - l_bound:.6f} <= {kappa_n:.6f}")
-            break
+            f1.eval()
+            f2.eval()
+            with torch.no_grad():
+                f1_train_out = f1(H1_train_tensor).cpu().numpy().flatten()
+                f2_train_out = f2(H2_train_tensor).cpu().numpy().flatten()
+    
+            phi1 = stats.norm.cdf((A1_array * f1_train_out) / hn)
+            phi2 = stats.norm.cdf((A2_array * f2_train_out) / hn)
+                
+            # Oracle 版 Hajek Self-Normalized IPW
+            ipw_phi_prod = ipw_train_oof * phi1 * phi2
+            norm_factor = np.mean(ipw_phi_prod)
+            raw_sv_val = np.mean((Y2_array > q_current) * ipw_phi_prod)
+            sv_val = raw_sv_val / (norm_factor + 1e-10)
+            best_sv = sv_val
+            print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
+            
+            if abs(sv_val - (1 - tau)) <= epsilon_n:
+                print(f"✅ Oracle SCL Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
+                break
+            elif sv_val >= (1 - tau):
+                l_bound = q_current
+            else:
+                u_bound = q_current
+                
+            if (u_bound - l_bound) <= kappa_n:
+                print(f"✅ Oracle SCL Converged by kappa width: {u_bound - l_bound:.6f} <= {kappa_n:.6f}")
+                break
+                
+    elif optim_mode == "ao":
+        from Main.src.Oracle.step2_inner import inner_optimization_grid
+        grid_Q = np.unique(np.sort(Y2_array))
+        epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
+        delta_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
+        
+        print(f"AO Settings -> Grid size: {len(grid_Q)}, epsilon_n: {epsilon_n:.6f}, delta_n: {delta_n:.6f}, hn: {hn:.6f}")
+        
+        q_current = np.quantile(Y2_array, tau)
+        last_sign_f1 = None
+        last_sign_f2 = None
+        
+        print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle AO) ---")
+        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
+        print(f"Optimal configs locked: {best_p}")
+        
+        for it in range(max_alt_iters):
+            print(f"\n--- Alternating Optim Iteration {it+1}/{max_alt_iters} ---")
+            print(f"Current q^(k-1) = {q_current:.6f}")
+            
+            ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
+            ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
+            f1, f2, val_loss = train_outer_policies(DataLoader(ds_t, 128, True), DataLoader(ds_v, 128, False), best_p, phi_type, model_type)
+            
+            f1.eval()
+            f2.eval()
+            with torch.no_grad():
+                f1_train_out = f1(H1_train_tensor).cpu().numpy().flatten()
+                f2_train_out = f2(H2_train_tensor).cpu().numpy().flatten()
+        
+            phi1 = stats.norm.cdf((A1_array * f1_train_out) / hn)
+            phi2 = stats.norm.cdf((A2_array * f2_train_out) / hn)
+            
+            sign_f1 = (f1_train_out > 0).astype(int)
+            sign_f2 = (f2_train_out > 0).astype(int)
+            
+            q_new, sv_val = inner_optimization_grid(Y2_array, ipw_train_oof, phi1, phi2, grid_Q, tau)
+            best_sv = sv_val
+            print(f"    -> Updated Empirical Survival Value (SV) at new q {q_new:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
+            
+            policy_flip_count = 0
+            if last_sign_f1 is not None and last_sign_f2 is not None:
+                policy_flip_count = np.sum(sign_f1 != last_sign_f1) + np.sum(sign_f2 != last_sign_f2)
+                
+            print(f"    -> Convergence checks: |q_new - q_current| = {abs(q_new - q_current):.6f}, |SV - target| = {abs(sv_val - (1 - tau)):.6f}, Policy Flips: {policy_flip_count}")
+            
+            if abs(sv_val - (1 - tau)) <= epsilon_n:
+                print(f"✅ AO Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
+                q_current = q_new
+                break
+                
+            if abs(q_new - q_current) <= delta_n:
+                print(f"✅ AO Converged by delta_n threshold (q settled): shifed {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
+                q_current = q_new
+                break
+                
+            if it > 0 and policy_flip_count == 0:
+                print(f"✅ AO Converged by Zero-Flip: Policies haven't changed from the last iteration.")
+                q_current = q_new
+                break
+                
+            q_current = q_new
+            last_sign_f1 = sign_f1
+            last_sign_f2 = sign_f2
+            
+    else:
+        raise ValueError(f"Unknown optim_mode {optim_mode}")
 
     if save_models: 
         save_trained_models(f1, f2, best_p, n_train, tau, phi_type, model_type, seed)
 
     return f1, f2, q_current, best_sv
 
-def train_policy_Oracle_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2"):
+def train_policy_Oracle_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2", optim_mode="scl"):
     """
     不带 Cross-Fitting (CF) 版本的 Oracle 策略学习函数。
     """
@@ -164,15 +236,7 @@ def train_policy_Oracle_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.
     A1_array = df_train['A1'].values
     A2_array = df_train['A2'].values
     
-    l_bound, u_bound = np.min(Y2_array), np.max(Y2_array)
-    epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
-    kappa_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = 0.2 / np.log(n_train)
-
-    print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}, hn: {hn:.6f}")
-    q_current = None
-    best_sv = 0.0
-    f1, f2 = None, None
     
     device_compute = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     H1_train_tensor = torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1).to(device_compute)
@@ -181,46 +245,124 @@ def train_policy_Oracle_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.
         torch.tensor(df_train['Y1'].values, dtype=torch.float32).unsqueeze(1),
         torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)
     ], dim=1).to(device_compute)
-
-    q_initial = (l_bound + u_bound) / 2.0
-    print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF) ---")
-    best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_initial, n_trials=10, phi_type=phi_type, model_type=model_type)
     
-    for it in range(max_alt_iters):
-        q_current = (l_bound + u_bound) / 2.0
-        print(f"--- Iter {it+1}/{max_alt_iters} Binary Search m (q) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}] ---")
-        ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
-        ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
-        f1, f2, _ = train_outer_policies(DataLoader(ds_t, 128, True), DataLoader(ds_v, 128, False), best_p, phi_type, model_type)
+    q_current = None
+    f1, f2 = None, None
+    best_sv = 0.0
+    
+    if optim_mode == "scl":
+        l_bound, u_bound = np.min(Y2_array), np.max(Y2_array)
+        epsilon_n = min(1e-3, 0.5 / np.sqrt(n_train))
+        kappa_n = min(1e-3, np.std(Y2_array) / (6 * np.sqrt(n_train)))
+    
+        print(f"SCL Settings -> Initial bounds: [{l_bound:.6f}, {u_bound:.6f}], epsilon_n: {epsilon_n:.6f}, kappa_n: {kappa_n:.6f}, hn: {hn:.6f}")
         
-        f1.eval()
-        f2.eval()
-        with torch.no_grad():
-            f1_out = f1(H1_train_tensor).cpu().numpy().flatten()
-            f2_out = f2(H2_train_tensor).cpu().numpy().flatten()
-
-        phi1 = stats.norm.cdf((A1_array * f1_out) / hn)
-        phi2 = stats.norm.cdf((A2_array * f2_out) / hn)
-
-        # Oracle 版 Hajek Self-Normalized IPW
-        ipw_phi_prod = ipw_train_oof * phi1 * phi2
-        norm_factor = np.mean(ipw_phi_prod)
-        raw_sv_val = np.mean((Y2_array > q_current) * ipw_phi_prod)
-        sv_val = raw_sv_val / (norm_factor + 1e-10)
-        best_sv = sv_val
-        print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
+        q_initial = (l_bound + u_bound) / 2.0
+        print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF SCL) ---")
+        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_initial, n_trials=10, phi_type=phi_type, model_type=model_type)
         
-        if abs(sv_val - (1 - tau)) <= epsilon_n:
-            print(f"✅ Oracle SCL Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
-            break
-        elif sv_val >= (1 - tau):
-            l_bound = q_current
-        else:
-            u_bound = q_current
+        for it in range(max_alt_iters):
+            q_current = (l_bound + u_bound) / 2.0
+            print(f"--- Iter {it+1}/{max_alt_iters} Binary Search m (q) = {q_current:.6f} with bounds [{l_bound:.6f}, {u_bound:.6f}] ---")
+            ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
+            ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
+            f1, f2, _ = train_outer_policies(DataLoader(ds_t, 128, True), DataLoader(ds_v, 128, False), best_p, phi_type, model_type)
             
-        if (u_bound - l_bound) <= kappa_n:
-            print(f"✅ Oracle SCL Converged by kappa width: {u_bound - l_bound:.6f} <= {kappa_n:.6f}")
-            break
+            f1.eval()
+            f2.eval()
+            with torch.no_grad():
+                f1_out = f1(H1_train_tensor).cpu().numpy().flatten()
+                f2_out = f2(H2_train_tensor).cpu().numpy().flatten()
+    
+            phi1 = stats.norm.cdf((A1_array * f1_out) / hn)
+            phi2 = stats.norm.cdf((A2_array * f2_out) / hn)
+    
+            # Oracle 版 Hajek Self-Normalized IPW
+            ipw_phi_prod = ipw_train_oof * phi1 * phi2
+            norm_factor = np.mean(ipw_phi_prod)
+            raw_sv_val = np.mean((Y2_array > q_current) * ipw_phi_prod)
+            sv_val = raw_sv_val / (norm_factor + 1e-10)
+            best_sv = sv_val
+            print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
+            
+            if abs(sv_val - (1 - tau)) <= epsilon_n:
+                print(f"✅ Oracle SCL Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
+                break
+            elif sv_val >= (1 - tau):
+                l_bound = q_current
+            else:
+                u_bound = q_current
+                
+            if (u_bound - l_bound) <= kappa_n:
+                print(f"✅ Oracle SCL Converged by kappa width: {u_bound - l_bound:.6f} <= {kappa_n:.6f}")
+                break
+                
+    elif optim_mode == "ao":
+        grid_Q = np.unique(np.sort(Y2_array))
+        epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
+        delta_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
+        
+        print(f"AO Settings -> Grid size: {len(grid_Q)}, epsilon_n: {epsilon_n:.6f}, delta_n: {delta_n:.6f}, hn: {hn:.6f}")
+        
+        q_current = np.quantile(Y2_array, tau)
+        last_sign_f1 = None
+        last_sign_f2 = None
+        
+        print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---")
+        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
+        print(f"Optimal configs locked: {best_p}")
+        
+        for it in range(max_alt_iters):
+            print(f"\n--- Alternating Optim Iteration {it+1}/{max_alt_iters} ---")
+            print(f"Current q^(k-1) = {q_current:.6f}")
+            
+            ds_t = prepare_outer_tensors(df_train, ipw_train_oof, q_current)
+            ds_v = prepare_outer_tensors(df_val, ipw_val_preds, q_current)
+            f1, f2, val_loss = train_outer_policies(DataLoader(ds_t, 128, True), DataLoader(ds_v, 128, False), best_p, phi_type, model_type)
+            
+            f1.eval()
+            f2.eval()
+            with torch.no_grad():
+                f1_train_out = f1(H1_train_tensor).cpu().numpy().flatten()
+                f2_train_out = f2(H2_train_tensor).cpu().numpy().flatten()
+        
+            phi1 = stats.norm.cdf((A1_array * f1_train_out) / hn)
+            phi2 = stats.norm.cdf((A2_array * f2_train_out) / hn)
+            
+            sign_f1 = (f1_train_out > 0).astype(int)
+            sign_f2 = (f2_train_out > 0).astype(int)
+            
+            q_new, sv_val = inner_optimization_grid(Y2_array, ipw_train_oof, phi1, phi2, grid_Q, tau)
+            best_sv = sv_val
+            print(f"    -> Updated Empirical Survival Value (SV) at new q {q_new:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
+            
+            policy_flip_count = 0
+            if last_sign_f1 is not None and last_sign_f2 is not None:
+                policy_flip_count = np.sum(sign_f1 != last_sign_f1) + np.sum(sign_f2 != last_sign_f2)
+                
+            print(f"    -> Convergence checks: |q_new - q_current| = {abs(q_new - q_current):.6f}, |SV - target| = {abs(sv_val - (1 - tau)):.6f}, Policy Flips: {policy_flip_count}")
+            
+            if abs(sv_val - (1 - tau)) <= epsilon_n:
+                print(f"✅ AO Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
+                q_current = q_new
+                break
+                
+            if abs(q_new - q_current) <= delta_n:
+                print(f"✅ AO Converged by delta_n threshold (q settled): shifed {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
+                q_current = q_new
+                break
+                
+            if it > 0 and policy_flip_count == 0:
+                print(f"✅ AO Converged by Zero-Flip: Policies haven't changed from the last iteration.")
+                q_current = q_new
+                break
+                
+            q_current = q_new
+            last_sign_f1 = sign_f1
+            last_sign_f2 = sign_f2
+            
+    else:
+        raise ValueError(f"Unknown optim_mode {optim_mode}")
 
     if save_models: 
         save_trained_models(f1, f2, best_p, n_train, tau, phi_type, model_type, seed)
