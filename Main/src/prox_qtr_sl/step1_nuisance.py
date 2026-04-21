@@ -151,7 +151,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
             kernel_inputs2 = torch.cat([W1, W2, Y0, Y1], dim=1)
             kernel_matrix2 = calculate_kernel_matrix(kernel_inputs2)
             
-            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_pred * tt1, kernel_matrix2, loss_name='U_statistic'))
+            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_pred, kernel_matrix2, loss_name='U_statistic'))
             
             loss2.backward()
             optimizer.step()
@@ -166,7 +166,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
                 pred2 = model(torch.cat([Z1, Z2, Y0, Y1], dim=1))
                 kernel_matrix2 = calculate_kernel_matrix(torch.cat([W1, W2, Y0, Y1], dim=1))
                 
-                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_pred * tt1, kernel_matrix2, loss_name='U_statistic'))
+                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_pred, kernel_matrix2, loss_name='U_statistic'))
                 total_val_loss += v_loss.item()
             total_val_loss /= len(val_loader)
             
