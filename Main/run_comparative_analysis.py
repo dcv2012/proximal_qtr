@@ -42,7 +42,7 @@ def plot_boxplot_from_df(df_valid, args, res_dir):
     # Prepare data for plotting
     plt.figure(figsize=(8, 6))
     
-    # df_valid contains 'Estimator', 'True_Perf', 'Train_Est'
+    # df_valid contains 'Estimator', 'True_Perf', 'Est_Error'
     sns.boxplot(x="Estimator", y="True_Perf", data=df_valid, palette="Set2")
     plt.title(f"True Quantile Value of Estimated Policies\n(n={args.n_train}, tau={args.tau}, reps={args.mc_reps}, phi_type={args.phi_type})")
     plt.ylabel(r"Target Quantile Value $V(\hat{d})$")
@@ -76,9 +76,9 @@ def run_comparative_mc(args):
     mc_sample_size = args.mc_eval_size
     
     results = {
-        "Proximal": {"true_perf": [], "train_est": []},
-        "SRA": {"true_perf": [], "train_est": []},
-        "Oracle": {"true_perf": [], "train_est": []}
+        "Proximal": {"true_perf": [], "est_error": []},
+        "SRA": {"true_perf": [], "est_error": []},
+        "Oracle": {"true_perf": [], "est_error": []}
     }
     
     # 提前定义好保存路径并在开始前写入由于随时追踪原始结果的文件头
@@ -89,7 +89,7 @@ def run_comparative_mc(args):
     
     # 注意：为了让 analyze_results 可以读取无噪音的数据格式，我们纯粹记录数据点
     with open(save_path, 'w') as f:
-        f.write("Repetition,Estimator,True_Perf,Train_Est\n")
+        f.write("Repetition,Estimator,True_Perf,Est_Error\n")
     
     st_time = time.time()
     
@@ -116,8 +116,9 @@ def run_comparative_mc(args):
             )
         
         df_eval_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device, seed=eval_seed)
-        results["Proximal"]["true_perf"].append(np.quantile(df_eval_p['Y2'], args.tau))
-        results["Proximal"]["train_est"].append(q_est_p)
+        true_perf_p = np.quantile(df_eval_p['Y2'], args.tau)
+        results["Proximal"]["true_perf"].append(true_perf_p)
+        results["Proximal"]["est_error"].append(true_perf_p - q_est_p)
         
         # === 2. SRA Estimator ===
         print(f"  -> Training SRA Estimator (No-CF: {args.no_cf})...")
@@ -136,8 +137,9 @@ def run_comparative_mc(args):
                 dgp=args.dgp, optim_mode=args.optim_mode
             )
         df_eval_s = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_s, f2=f2_s, device=device, seed=eval_seed)
-        results["SRA"]["true_perf"].append(np.quantile(df_eval_s['Y2'], args.tau))
-        results["SRA"]["train_est"].append(q_est_s)
+        true_perf_s = np.quantile(df_eval_s['Y2'], args.tau)
+        results["SRA"]["true_perf"].append(true_perf_s)
+        results["SRA"]["est_error"].append(true_perf_s - q_est_s)
         
         # === 3. Oracle Estimator ===
         print(f"  -> Training Oracle Estimator (No-CF: {args.no_cf})...")
@@ -156,8 +158,9 @@ def run_comparative_mc(args):
                 dgp=args.dgp, optim_mode=args.optim_mode
             )
         df_eval_o = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_o, f2=f2_o, device=device, seed=eval_seed)
-        results["Oracle"]["true_perf"].append(np.quantile(df_eval_o['Y2'], args.tau))
-        results["Oracle"]["train_est"].append(q_est_o)
+        true_perf_o = np.quantile(df_eval_o['Y2'], args.tau)
+        results["Oracle"]["true_perf"].append(true_perf_o)
+        results["Oracle"]["est_error"].append(true_perf_o - q_est_o)
         
         # Debug Report Output for the repetition
         iter_log = (
@@ -169,9 +172,9 @@ def run_comparative_mc(args):
         
         # 每次循环结束后随时将结果追加记录到文件
         with open(save_path, 'a') as f:
-            f.write(f"{i+1},Proximal,{results['Proximal']['true_perf'][-1]:.12f},{results['Proximal']['train_est'][-1]:.12f}\n")
-            f.write(f"{i+1},SRA,{results['SRA']['true_perf'][-1]:.12f},{results['SRA']['train_est'][-1]:.12f}\n")
-            f.write(f"{i+1},Oracle,{results['Oracle']['true_perf'][-1]:.12f},{results['Oracle']['train_est'][-1]:.12f}\n")
+            f.write(f"{i+1},Proximal,{results['Proximal']['true_perf'][-1]:.12f},{results['Proximal']['est_error'][-1]:.12f}\n")
+            f.write(f"{i+1},SRA,{results['SRA']['true_perf'][-1]:.12f},{results['SRA']['est_error'][-1]:.12f}\n")
+            f.write(f"{i+1},Oracle,{results['Oracle']['true_perf'][-1]:.12f},{results['Oracle']['est_error'][-1]:.12f}\n")
             f.write("\n") # 留一行空格
         
     print(f"\n[Simulation Completed] Execution Time: {(time.time() - st_time)/60:.2f} minutes")
@@ -196,8 +199,8 @@ def analyze_results(csv_path, args, res_dir):
         df_all = pd.read_csv(csv_path, skip_blank_lines=True)
         # Drop rows where True_Perf is text (like the Old Summary headers if user reused a file)
         df_all['True_Perf'] = pd.to_numeric(df_all['True_Perf'], errors='coerce')
-        df_all['Train_Est'] = pd.to_numeric(df_all['Train_Est'], errors='coerce')
-        df_valid = df_all.dropna(subset=['True_Perf', 'Train_Est'])
+        df_all['Est_Error'] = pd.to_numeric(df_all['Est_Error'], errors='coerce')
+        df_valid = df_all.dropna(subset=['True_Perf', 'Est_Error'])
     except Exception as e:
          print(f"❌ Error reading the CSV file: {e}")
          return
@@ -210,7 +213,7 @@ def analyze_results(csv_path, args, res_dir):
             continue
             
         perf_array = method_data['True_Perf'].values
-        est_array = method_data['Train_Est'].values
+        err_array = method_data['Est_Error'].values
         
         # 1. Mean of true quantile value estimated by the model 
         mean_v_true = np.mean(perf_array)
@@ -219,7 +222,7 @@ def analyze_results(csv_path, args, res_dir):
         std_v_true = np.std(perf_array)
         
         # 3. Mean absolute estimation error (Generalization bound): |V(d_hat) - V_hat(d_hat)|
-        estimation_error = np.mean(np.abs(perf_array - est_array))
+        estimation_error = np.mean(np.abs(err_array))
         
         summary_data.append({
             "Estimator": method,
