@@ -36,9 +36,7 @@ softplus, reps 20
 实验：S1*2(linear+nn), S2*2(linear+nn) + S2(phi 2,3,4,0), all 30 recps
 
 
-
-
-
-4.21
-*** 考虑kernel估计q22
-
+4.21 
+*恢复grid search的范围
+*修改dgp S2 Z2 var
+*sra、oracle+ao/scl 控制
