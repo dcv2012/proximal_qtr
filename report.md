@@ -41,8 +41,7 @@ softplus, reps 20
 *修改dgp S2 Z2 var
 *sra、oracle+ao/scl 控制
 
-
-实验：只跑S2(baseline: S2-linear/nn-30)，需对比sp/lr的好坏（S2-nn-31/32），对比是否trim(no trim:S2-nn-33)， 对比fold数量的影响（S2-5fold-linear-20), 对比phitype(S2-nn-phi3/phi4-30)
+实验：只跑S2(baseline: S2-linear/nn-30)，需对比sp/lr的好坏（S2-nn-31/32），对比是否trim(no trim:S2-nn-33)， 对比fold数量的影响（S2-5fold-linear-20）, 对比phitype(S2-nn-phi3/phi4-30)
 结果：
 1. 相比420：linear差不多，nn表现下降（方差增大）
 2. 加入sp/lr的效果：均有改善，sp效果（4.35）明显好于lr
@@ -52,3 +51,9 @@ softplus, reps 20
 
 4.22
 在原setting基础上：nn+phi3+notrim+sp (tmux 3-3000,2-2000)
+
+**修改dgp S2：增加Y0,Y1的var，减小W1的var
+*增加q估计中损失关于q的显示l2-正则（lambda_reg）
+*增加model的sp
+
+实验

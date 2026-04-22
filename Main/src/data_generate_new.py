@@ -4,7 +4,7 @@ import torch
 
 origin_para_set = {
     'mu_Y0': -0.35,
-    'sigma_Y0': 0.2,
+    'sigma_Y0': 0.5, #origin 0.2
     'mu_U0': 0.35,
     'sigma_U0': 0.5,
     
@@ -19,11 +19,11 @@ origin_para_set = {
     
     # W1 is a WEAK proxy for U0 (small coeff, high noise) -> Hurts h21 (POR)
     'mu_W11': [0.2, -0.35, 0.8],
-    'sigma_W11': 1.8,
+    'sigma_W11': 0.5,
     
     # Y_1, U_1
     'mu_Y1': [0.2, 0.2, 0.4, -0.6],
-    'sigma_Y1': 0.2,
+    'sigma_Y1': 0.5,
     'mu_U1': [0.1, 0.2, 0, 0.8],
     'sigma_U1': 0.5,
     

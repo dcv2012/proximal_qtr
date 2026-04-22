@@ -39,7 +39,7 @@ class MLP_for_MMR(nn.Module):
         x = self.layer_list[-1](x)
         
         # 选择激活函数
-        # x = torch.nn.functional.softplus(x)
+        x = torch.nn.functional.softplus(x)
         # x = torch.nn.functional.leaky_relu(x, negative_slope=0.1)
         
         return x

@@ -407,7 +407,7 @@ Under these settings, if the optimal quantile value $q^*$ is found, the learning
 \begin{align}
         (\hat f_{n,1},\hat f_{n,2})
         = \argmax_{(f_1,f_2) \in \mathcal{U}_n}
-        \Big\{\frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>q^*) \cdot \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \lambda_n(||f_1||_{n,2}^2+||f_2||_{n,2}^2) \Big\}
+        \Big\{\frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>q^*) \cdot \hat q_{22}(\bar Z_{2,i}, \bar Y_{1,i}, \bar A_{2,i}) \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \lambda_n(||f_1||_{2}^2+||f_2||_{2}^2) \Big\}
         \label{ole1}
 \end{align}
 and the solution leads to the estimated regimes $\hat d_{n,1} = \text{sign}(\hat f_{n,1})$ and $\hat d_{n,2} = \text{sign}(\hat f_{n,2})$.
@@ -434,7 +434,7 @@ and the solution leads to the estimated regimes $\hat d_{n,1} = \text{sign}(\hat
         \textbf{Step 1. Policy Update (Outer level):} Fix $q^{(k-1)}$, solve for the optimal policies:
         \begin{flalign*}
             (\hat f_{n,1}^{(k)},\hat f_{n,2}^{(k)}) = &\argmax_{(f_1,f_2) \in \mathcal{U}_n}\frac{1}{n} \sum_{i=1}^n  \big[I(Y_{2,i}>q^{(k-1)}) \cdot  
-            \hat q_{22,i} \cdot \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \lambda_n(||f_1||_{n,2}^2+||f_2||_{n,2}^2);
+            \hat q_{22,i} \cdot \psi(A_{1,i}f_1(H_{1,i}),A_{2,i}f_2(H_{2,i})) \big] - \lambda_n(||f_1||_{2}^2+||f_2||_{2}^2);
         \end{flalign*} \\
         \textbf{Step 2. Quantile Update (Inner level):} Fix current policies $(\hat f_{n,1}^{(k)},\hat f_{n,2}^{(k)})$, evaluate over the grid $\mathcal{Q}$ to find the new quantile:
         \begin{flalign*}
@@ -663,7 +663,7 @@ And the following condition from (\textbf{Laha2021}) is helpful to construct a s
     \end{align}
     where the last equality is given by condition \ref{cond2laha} that if $x>0$, then $\phi(x)>\phi(0)=C_\phi/2$.
     
-    For the second term in \eqref{fcpf1}, we can lower bound it in a quite similar way with that of the first term. 
+    For the second term in \eqref{fcpf1}, we can lower bound it in a quite similar way to that of the first term. 
     Note that 
     \begin{align}
         &\mathbb{E}\Big[I(Y_2>q)q_{22}(\bar Z_{2}, \bar Y_{1}, \bar A_{2})I(A_2d_2^*>0)\big(\phi(A_1\tilde f_1)-\phi(A_1f_1)\big)|H_1\Big] \notag\\
@@ -743,10 +743,10 @@ To this end, we will re-clarify some notations that may be referred to in the fo
     = \sup_{(f_1,f_2) \in \mathcal{F}}\mathbb{P}\big[I(Y_2>q^*)\cdot q_{22}\cdot \psi(A_1f_1(H_1), A_2f_2(H_2)\big], \notag\\
 \end{align}
 \begin{align}
-     (\tilde f_{n,1}, \tilde f_{n,2}) & = \argmax_{(f_1,f_2) \in \mathcal{U}_n} \big\{SV_\psi(f_1,f_2;q^*) - \lambda_n(||f_1||_{n,2}^2+||f_2||_{n,2}^2)\big\} \notag\\
-     &= \argmax_{(f_1,f_2) \in \mathcal{U}_n}\big\{ \mathbb{P}\big[I(Y_2>q^*)\cdot q_{22}\cdot \psi(A_1f_1(H_1), A_2f_2(H_2)\big] - \lambda_n(||f_1||_{n,2}^2+||f_2||_{n,2}^2) \big\},\notag\\
-     (\hat f_{n,1}, \hat f_{n,2}) & = \argmax_{(f_1,f_2) \in \mathcal{U}_n} \big\{\hat{SV}_\psi(f_1,f_2;q^*) - \lambda_n(||f_1||_{n,2}^2+||f_2||_{n,2}^2)\big\} \notag\\
-     &= \argmax_{(f_1,f_2) \in \mathcal{U}_n} \big\{\mathbb{P}_n\big[I(Y_2>q^*)\cdot \hat q_{22}\cdot \psi(A_1f_1(H_1), A_2f_2(H_2)\big] - \lambda_n(||f_1||_{n,2}^2+||f_2||_{n,2}^2)\big\} \notag
+     (\tilde f_{n,1}, \tilde f_{n,2}) & = \argmax_{(f_1,f_2) \in \mathcal{U}_n} \big\{SV_\psi(f_1,f_2;q^*) - \lambda_n(||f_1||_{2}^2+||f_2||_{2}^2)\big\} \notag\\
+     &= \argmax_{(f_1,f_2) \in \mathcal{U}_n}\big\{ \mathbb{P}\big[I(Y_2>q^*)\cdot q_{22}\cdot \psi(A_1f_1(H_1), A_2f_2(H_2)\big] - \lambda_n(||f_1||_{2}^2+||f_2||_{2}^2) \big\},\notag\\
+     (\hat f_{n,1}, \hat f_{n,2}) & = \argmax_{(f_1,f_2) \in \mathcal{U}_n} \big\{\hat{SV}_\psi(f_1,f_2;q^*) - \lambda_n(||f_1||_{2}^2+||f_2||_{2}^2)\big\} \notag\\
+     &= \argmax_{(f_1,f_2) \in \mathcal{U}_n} \big\{\mathbb{P}_n\big[I(Y_2>q^*)\cdot \hat q_{22}\cdot \psi(A_1f_1(H_1), A_2f_2(H_2)\big] - \lambda_n(||f_1||_{2}^2+||f_2||_{2}^2)\big\} \notag
 \end{align}
 where $\mathbb{P}, \mathbb{P}_n$ denote the true distribution and empirical distribution, respectively.
 It is worth noting that the existence of $(\tilde f_{n,1},\tilde f_{n,2})$ is without any guarantee in general, but is intuitive in the following discussion. 
@@ -754,22 +754,22 @@ It is worth noting that the existence of $(\tilde f_{n,1},\tilde f_{n,2})$ is wi
 Based on (Laha2021), we have the following decomposition of $\psi-$regret:
 \begin{align}
     &SV_\psi^* - SV_\psi(\hat f_{n,1}, \hat f_{n,2};q^*) \notag\\
-    \leq& \quad \Big\{SV_\psi^* - [SV_\psi(\tilde f_{n,1}, \tilde f_{n,2};q^*) - \lambda_n(||\tilde f_{n,1}||_{n,2}^2+||\tilde f_{n,2}||_{n,2}^2)]\Big\} \notag\\
-    &+ \Big\{SV_\psi(\tilde f_{n,1}, \tilde f_{n,2};q^*) -\lambda_n(||\tilde f_{n,1}||_{n,2}^2+||\tilde f_{n,2}||_{n,2}^2)\Big\} - \Big\{SV_\psi(\hat f_{n,1}, \hat f_{n,2};q^*) -\lambda_n(||\hat f_{n,1}||_{n,2}^2+||\hat f_{n,2}||_{n,2}^2)\Big\}
+    \leq& \quad \Big\{SV_\psi^* - [SV_\psi(\tilde f_{n,1}, \tilde f_{n,2};q^*) - \lambda_n(||\tilde f_{n,1}||_{2}^2+||\tilde f_{n,2}||_{2}^2)]\Big\} \notag\\
+    &+ \Big\{SV_\psi(\tilde f_{n,1}, \tilde f_{n,2};q^*) -\lambda_n(||\tilde f_{n,1}||_{2}^2+||\tilde f_{n,2}||_{2}^2)\Big\} - \Big\{SV_\psi(\hat f_{n,1}, \hat f_{n,2};q^*) -\lambda_n(||\hat f_{n,1}||_{2}^2+||\hat f_{n,2}||_{2}^2)\Big\}
     \notag\\
-    =&\quad \Big\{SV_\psi^* - SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) + \lambda_n(||\tilde f_{n,1}||_{n,2}^2+||\tilde f_{n,2}||_{n,2}^2) \Big\} \notag\\
+    =&\quad \Big\{SV_\psi^* - SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) + \lambda_n(||\tilde f_{n,1}||_{2}^2+||\tilde f_{n,2}||_{2}^2) \Big\} \notag\\
      &+ \Big\{[SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) - \hat{SV}_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*)] - [SV_\psi(\hat f_{n,1},\hat f_{n,2};q^*) - \hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)]\Big\} \notag\\
-     &+ \Big\{[\hat{SV}_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) - \lambda_n(||\tilde f_{n,1}||_{n,2}^2+||\tilde f_{n,2}||_{n,2}^2)]- \sup_{(f_1,f_2)\in\mathcal{U}_n}[\hat{SV}_\psi(f_1,f_2;q^*) - \lambda_n(|| f_{n,1}||_{n,2}^2+||f_{n,2}||_{n,2}^2)] \Big\}\notag\\
-     &+ \Big\{\sup_{(f_1,f_2)\in\mathcal{U}_n}[\hat{SV}_\psi(f_1,f_2;q^*) - \lambda_n(||f_{n,1}||_{n,2}^2+||f_{n,2}||_{n,2}^2)] - [\hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)-\lambda_n(||\hat f_{n,1}||_{n,2}^2+||\hat f_{n,2}||_{n,2}^2)] \Big\} \notag\\
-    \leq& \quad \Big\{SV_\psi^* - SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) + \lambda_n(||\tilde f_{n,1}||_{n,2}^2+||\tilde f_{n,2}||_{n,2}^2) \Big\} \notag\\
+     &+ \Big\{[\hat{SV}_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) - \lambda_n(||\tilde f_{n,1}||_{2}^2+||\tilde f_{n,2}||_{2}^2)]- \sup_{(f_1,f_2)\in\mathcal{U}_n}[\hat{SV}_\psi(f_1,f_2;q^*) - \lambda_n(|| f_{n,1}||_{2}^2+||f_{n,2}||_{2}^2)] \Big\}\notag\\
+     &+ \Big\{\sup_{(f_1,f_2)\in\mathcal{U}_n}[\hat{SV}_\psi(f_1,f_2;q^*) - \lambda_n(||f_{n,1}||_{2}^2+||f_{n,2}||_{2}^2)] - [\hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)-\lambda_n(||\hat f_{n,1}||_{2}^2+||\hat f_{n,2}||_{2}^2)] \Big\} \notag\\
+    \leq& \quad \Big\{SV_\psi^* - SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) + \lambda_n(||\tilde f_{n,1}||_{2}^2+||\tilde f_{n,2}||_{2}^2) \Big\} \notag\\
      &+ \Big\{[SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) - \hat{SV}_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*)] - [SV_\psi(\hat f_{n,1},\hat f_{n,2};q^*) - \hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)]\Big\} \notag\\
-     &+ \Big\{\sup_{(f_1,f_2)\in\mathcal{U}_n}[\hat{SV}_\psi(f_1,f_2;q^*) - \lambda_n(||f_{n,1}||_{n,2}^2+||f_{n,2}||_{n,2}^2)] - [\hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)-\lambda_n(||\hat f_{n,1}||_{n,2}^2+||\hat f_{n,2}||_{n,2}^2)] \Big\}.
+     &+ \Big\{\sup_{(f_1,f_2)\in\mathcal{U}_n}[\hat{SV}_\psi(f_1,f_2;q^*) - \lambda_n(||f_{n,1}||_{2}^2+||f_{n,2}||_{2}^2)] - [\hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)-\lambda_n(||\hat f_{n,1}||_{2}^2+||\hat f_{n,2}||_{2}^2)] \Big\}.
     \label{totalerror}
 \end{align}
 
 We first give a brief understanding of the three terms in \eqref{totalerror}.
 \begin{itemize}
-    \item The first term $\Big\{SV_\psi^* - SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) + \lambda_n(||\tilde f_{n,1}||_{n,2}^2+||\tilde f_{n,2}||_{n,2}^2) \Big\}$: it can be regarded as the approximation error since we restrict the function class of $f_1,f_2$ in $\mathcal{U}_n$. We denote it as $\textbf{App}_n$.
+    \item The first term $\Big\{SV_\psi^* - SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) + \lambda_n(||\tilde f_{n,1}||_{2}^2+||\tilde f_{n,2}||_{2}^2) \Big\}$: it can be regarded as the approximation error since we restrict the function class of $f_1,f_2$ in $\mathcal{U}_n$. We denote it as $\textbf{App}_n$.
     
     \item The second term $\Big\{[SV_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*) - \hat{SV}_\psi(\tilde f_{n,1},\tilde f_{n,2};q^*)] - [SV_\psi(\hat f_{n,1},\hat f_{n,2};q^*) - \hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)]\Big\}$, it is the main estimation error when we adopt empirical sample for practical estimation. 
     Similar to (Laha2021), we define the map 
@@ -792,7 +792,7 @@ We first give a brief understanding of the three terms in \eqref{totalerror}.
         where the second equality is by supposing the sample size $n$ is divisible by $K$ hence $\mathbb{P}_n = \frac{1}{K}\sum_{k=1}^K \mathbb{P}_{n,k}$.
         We denote the first term in \eqref{esterr} as $\textbf{Est}_n$ in line with (Laha2021), and the second term as $\textbf{Nuis}_n$ since it is caused by estimating the nuisance function. 
 
-    \item The third term $\Big\{\sup\limits_{(f_1,f_2)\in\mathcal{U}_n}[\hat{SV}_\psi(f_1,f_2;q^*) - \lambda_n(||f_{n,1}||_{n,2}^2+||f_{n,2}||_{n,2}^2)] - [\hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)-\lambda_n(||\hat f_{n,1}||_{n,2}^2+||\hat f_{n,2}||_{n,2}^2)] \Big\}$: it is the optimization error that depends on the optimization method used to maximize penalized $\hat{SV}_\psi(f_1,f_2;q)$ over $\mathcal{U}_n$. We denote it as $\textbf{Opt}_n$.
+    \item The third term $\Big\{\sup\limits_{(f_1,f_2)\in\mathcal{U}_n}[\hat{SV}_\psi(f_1,f_2;q^*) - \lambda_n(||f_{n,1}||_{2}^2+||f_{n,2}||_{2}^2)] - [\hat{SV}_\psi(\hat f_{n,1},\hat f_{n,2};q^*)-\lambda_n(||\hat f_{n,1}||_{2}^2+||\hat f_{n,2}||_{2}^2)] \Big\}$: it is the optimization error that depends on the optimization method used to maximize penalized $\hat{SV}_\psi(f_1,f_2;q)$ over $\mathcal{U}_n$. We denote it as $\textbf{Opt}_n$.
 \end{itemize}
 
 Now we can summarize our $\psi-$risk bound as follows: 
@@ -813,7 +813,7 @@ In line with (Schmidt-Hieber2020), we denote $\mathcal{U}_n=(\mathcal{U}_{1n},\m
 \end{align}
 where $L$ is the network depth, $\mathbf{p}=(p_0,\dots,p_{L+1})$ is the network width vector, $s$ is the network sparsity,
 $||W_j||_0$ denotes the number of non-zero entries of the weight matrix of $j-$th layer $W_j$, and $\big|\big| |f_t|_\infty \big|\big|_{\infty}$ denotes the sup-norm of the function $|f(\mathbf{x})|_\infty$ and is uniformly bounded by $F_t$.
-According to (Neyshabur2015, etc), the $L_2$-penalty of a neural network is actually imposed on $W_j$, which can be reformulated as $1$
+According to (Neyshabur2015, etc), the $L_2$-penalty of a neural network is actually imposed on its weight matrix $W_j$, which implies the equivalent representation $|| f_{t}||_{2}^2  \Longleftrightarrow \sum\limits_{j=1}^L ||W_j||_F^2$.
 
 
 
@@ -895,7 +895,7 @@ Finally, the outcome variable $Y_2$ is generated by
 \end{align*}
 
 \subsubsection{Scenario 2}
-$$Y_0 \sim \mathcal{N}(-0.35, \, 0.2^2)$$
+$$Y_0 \sim \mathcal{N}(-0.35, \, 0.5^2)$$
 $$U_0 \sim \mathcal{N}(0.35, \, 0.5^2)$$
 
 $$P(A_1 = 1 \mid Y_0, U_0) = \text{expit}(-0.2 + 0.05 Y_0 + 0.5 U_0)$$
@@ -903,10 +903,10 @@ $$P(A_1 = 1 \mid Y_0, U_0) = \text{expit}(-0.2 + 0.05 Y_0 + 0.5 U_0)$$
 $$Z_{1,1} \sim \mathcal{N}(0.45 + 0.25 A_1 + 0.5 Y_0 + 2.5 U_0, \, 0.2^2)$$
 $$Z_{1,2} \sim \mathcal{N}(0.05 + 0.15 A_1 + 0.45 Y_0 - 2.5 U_0, \, 0.2^2)$$
 
-$$W_{1,1} \sim \mathcal{N}(0.2 - 0.35 Y_0 + 0.8 U_0, \, 1.8^2)$$
+$$W_{1,1} \sim \mathcal{N}(0.2 - 0.35 Y_0 + 0.8 U_0, \, 0.5^2)$$
 
 
-$$Y_1 \sim \mathcal{N}(0.3 + 0.1 A_1 + 0.4 Y_0 - 0.6 U_0, \, 0.2^2)$$
+$$Y_1 \sim \mathcal{N}(0.3 + 0.1 A_1 + 0.4 Y_0 - 0.6 U_0, \, 0.5^2)$$
 $$U_1 \sim \mathcal{N}(0.2 + 0.1 A_1 + 0.8 U_0, \, 0.5^2)$$
 
 $$P(A_2 = 1 \mid Y_0, U_0, Y_1, U_1) = \text{expit}(-0.2 + 0.02 Y_0 + 0.03 U_0 - 0.03 Y_1 + 0.5 U_1)$$
@@ -959,7 +959,7 @@ $$Y_2 \sim \mathcal{N}(-2.5 - 2.0 A_2 - 2.0 A_1 - 0.5 A_1 A_2 + 6.0 U_1 + 6.0 U_
     For SRA estimator, denote $X_1^{SRA} = \{Y_0\}, X_2^{SRA} = \{\bar Y_1, A_1\}$, and we have the SRA weight
     \[
         \hat{W}^{SRA} := \frac{1}{\hat \pi_1(A_1|X_1^{SRA})\hat \pi_2(A_2|X_2^{SRA})}
-        = \frac{1}{\hat \pi_1(A_1|Y_0)\hat \pi_2(A_2|\bar Y_1, A_1)}，
+        = \frac{1}{\hat \pi_1(A_1|Y_0)\hat \pi_2(A_2|\bar Y_1, A_1)},
     \]
     where $\pi_1,\pi_2$ is the propensity score.
     Similarly, for Oracle estimator, denote $X_1^{Oracle} = \{Y_0,U_0\}, X_2^{Oracle}=\{\bar Y_1, \bar U_1, A_1\}$, and we have the Oracle weight

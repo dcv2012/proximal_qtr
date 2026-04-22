@@ -1,8 +1,9 @@
+import torch
 from Main.src.deepmmr.kernel_utils import calculate_kernel_matrix_batched
 
 
 
-def MMR_loss(model_output, target, kernel_matrix, loss_name: str):  # batch_indices=None:
+def MMR_loss(model_output, target, kernel_matrix, loss_name: str, lambda_reg: float = 0.0):  # batch_indices=None:
     """
     计算 MMR 损失函数。
     
@@ -33,6 +34,9 @@ def MMR_loss(model_output, target, kernel_matrix, loss_name: str):  # batch_indi
         loss = (residual.T @ K @ residual) / (n ** 2)
     else:
         raise ValueError(f"{loss_name} is not valid. Must be 'U_statistic' or 'V_statistic'.")
+    
+    if lambda_reg > 0.0:
+        loss = loss + lambda_reg * torch.mean(model_output ** 2)
     
     return loss
         

@@ -94,7 +94,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
             kernel_inputs = torch.cat([W1, Y0], dim=1)
             kernel_matrix = calculate_kernel_matrix(kernel_inputs)
             
-            loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='U_statistic'))
+            loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
             loss.backward()
             optimizer.step()
             
@@ -106,7 +106,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
                 Z1, Y0, W1, tt1, _, _, _, _ = [t.to(device) for t in batch]
                 pred = model(torch.cat([Z1, Y0], dim=1))
                 kernel_matrix = calculate_kernel_matrix(torch.cat([W1, Y0], dim=1))
-                v_loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='U_statistic'))
+                v_loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
                 total_val_loss += v_loss.item()
             total_val_loss /= len(val_loader)
             
@@ -151,7 +151,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
             kernel_inputs2 = torch.cat([W1, W2, Y0, Y1], dim=1)
             kernel_matrix2 = calculate_kernel_matrix(kernel_inputs2)
             
-            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_pred, kernel_matrix2, loss_name='U_statistic'))
+            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_pred, kernel_matrix2, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
             
             loss2.backward()
             optimizer.step()
@@ -166,7 +166,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
                 pred2 = model(torch.cat([Z1, Z2, Y0, Y1], dim=1))
                 kernel_matrix2 = calculate_kernel_matrix(torch.cat([W1, W2, Y0, Y1], dim=1))
                 
-                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_pred, kernel_matrix2, loss_name='U_statistic'))
+                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_pred, kernel_matrix2, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
                 total_val_loss += v_loss.item()
             total_val_loss /= len(val_loader)
             
@@ -201,6 +201,7 @@ def optimize_hyperparams(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, 
             'dropout_prob': trial.suggest_float('dropout_prob', 0.1, 0.5),
             'lr': trial.suggest_float('lr', 1e-5, 1e-2, log=True),
             'l2': trial.suggest_float('l2', 1e-4, 1e-2, log=True),
+            'lambda_reg': trial.suggest_float('lambda_reg', 1e-6, 1e-2, log=True),
             'epochs': 200
         }
         
