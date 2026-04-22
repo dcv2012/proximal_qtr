@@ -211,18 +211,7 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
     q22_val_preds = q22_val_preds / q22_val_pred_counts
 
 
-    # === 2.5 Weight Trimming (Option A: 1%/99% Trimming) ===
-    def trim_weights(w, lower_p=1, upper_p=99):
-        if len(w) > 0 and np.std(w) > 1e-6:
-            low = np.percentile(w, lower_p)
-            high = np.percentile(w, upper_p)
-            return np.clip(w, low, high)
-        return w
-
-    print(f"Trimming q22 weights (1%/99% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
-    q22_train_oof = trim_weights(q22_train_oof, lower_p=1, upper_p=99)
-    q22_val_preds = trim_weights(q22_val_preds, lower_p=1, upper_p=99)
-    print(f"Post-trimming -> Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
+    print(f"Weight summary before inner optimization -> Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
 
     # === 3. 第二/三步: 内外层交替优化 (Sequential Classification Learning) ===
     print("\n=== Step 2 & 3: Alternating Optimization for Policy Learning ===")
@@ -374,17 +363,7 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
             if val_sub_mask.sum() > 0:
                 q22_val_preds[val_sub_mask] = predict_q22_fn(df_val[val_sub_mask])
 
-    # === 2. Weight Trimming ===
-    def trim_weights(w, lower_p=1, upper_p=99):
-        if len(w) > 0 and np.std(w) > 1e-6:
-            low = np.percentile(w, lower_p)
-            high = np.percentile(w, upper_p)
-            return np.clip(w, low, high)
-        return w
-
-    print(f"Trimming q22 weights (1%/99% percentile)... Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
-    q22_train_oof = trim_weights(q22_train_oof, lower_p=1, upper_p=99)
-    q22_val_preds = trim_weights(q22_val_preds, lower_p=1, upper_p=99)
+    print(f"Weight summary before inner optimization -> Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
 
     # === 3. 内外层交替优化 (复用原版逻辑) ===
     print("\n=== Step 2 & 3: Alternating Optimization for Policy Learning ===")

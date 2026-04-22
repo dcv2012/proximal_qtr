@@ -99,21 +99,13 @@ def run_comparative_mc(args):
         print(f"\n[{i+1}/{args.mc_reps}] MC Repetition Seed: {current_seed}")
         
         # === 1. Proximal QTR ===
-        print(f"  -> Training Proximal QTR (No-CF: {args.no_cf})...")
-        if args.no_cf:
-            f1_p, f2_p, q_est_p, _ = train_policy_prox_qtr_sl(
-                n_train=args.n_train, seed=current_seed, 
-                max_alt_iters=args.max_alt_iters, tau=args.tau, 
-                phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-                dgp=args.dgp
-            )
-        else:
-            f1_p, f2_p, q_est_p, _ = train_policy_prox_qtr_sl(
-                n_train=args.n_train, seed=current_seed, K_folds=args.k_folds, 
-                max_alt_iters=args.max_alt_iters, tau=args.tau, 
-                phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-                dgp=args.dgp
-            )
+        print(f"  -> Training Proximal QTR (Always Cross-Fitting)")
+        f1_p, f2_p, q_est_p, _ = train_policy_prox_qtr_sl(
+            n_train=args.n_train, seed=current_seed, K_folds=args.k_folds, 
+            max_alt_iters=args.max_alt_iters, tau=args.tau, 
+            phi_type=args.phi_type, model_type=args.model_type, save_models=False,
+            dgp=args.dgp
+        )
         
         df_eval_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device, seed=eval_seed)
         true_perf_p = np.quantile(df_eval_p['Y2'], args.tau)

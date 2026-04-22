@@ -55,5 +55,6 @@ softplus, reps 20
 **修改dgp S2：增加Y0,Y1的var，减小W1的var
 *增加q估计中损失关于q的显示l2-正则（lambda_reg）
 *增加model的sp
+**删掉trim
 
 实验
