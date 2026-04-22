@@ -19,7 +19,7 @@ origin_para_set = {
     
     # W1 is a WEAK proxy for U0 (small coeff, high noise) -> Hurts h21 (POR)
     'mu_W11': [0.2, -0.35, 0.8],
-    'sigma_W11': 0.5,
+    'sigma_W11': 0.5, #origin 1.8
     
     # Y_1, U_1
     'mu_Y1': [0.2, 0.2, 0.4, -0.6],
