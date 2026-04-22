@@ -40,3 +40,15 @@ softplus, reps 20
 *恢复grid search的范围
 *修改dgp S2 Z2 var
 *sra、oracle+ao/scl 控制
+
+
+实验：只跑S2(baseline: S2-linear/nn-30)，需对比sp/lr的好坏（S2-nn-31/32），对比是否trim(no trim:S2-nn-33)， 对比fold数量的影响（S2-5fold-linear-20), 对比phitype(S2-nn-phi3/phi4-30)
+结果：
+1. 相比420：linear差不多，nn表现下降（方差增大）
+2. 加入sp/lr的效果：均有改善，sp效果（4.35）明显好于lr
+3. notrim效果：比普通nn好
+4. phi3：效果更好（4.24）
+5. 改成5fold：没有明显改善
+
+4.22
+在原setting基础上：nn+phi3+notrim+sp (tmux 3-3000,2-2000)
