@@ -24,7 +24,7 @@ def parse_arguments():
     parser.add_argument("--n_train", type=int, default=1000, help="Training set sample size (e.g. 500, 1000, 2000, 5000)")
     parser.add_argument("--mc_reps", type=int, default=30, help="Number of Monte Carlo repetitions")
     parser.add_argument("--mc_eval_size", type=int, default=100000, help="Size of data generated for policy evaluation")
-    parser.add_argument("--seed", type=int, default=20026, help="Base random seed for data generation and model initializations")
+    parser.add_argument("--seed", type=int, default=285063, help="Base random seed for data generation and model initializations")
     
     # 策略模型参数
     parser.add_argument("--tau", type=float, default=0.5, help="Target quantile level (e.g., 0.5 for median)")
