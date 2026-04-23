@@ -55,6 +55,7 @@ def prepare_tensors(df: pd.DataFrame, a1: int, a2: int) -> TensorDataset:
     """
     Y0 = torch.tensor(df['Y0'].values, dtype=torch.float32).unsqueeze(1)
     Y1 = torch.tensor(df['Y1'].values, dtype=torch.float32).unsqueeze(1)
+    A1 = torch.tensor(df['A1'].values, dtype=torch.float32).unsqueeze(1)
     
     # 动态支持 Z1, W1, Z2, W2 的高维扩展
     Z1 = extract_proxy(df, 'Z1')
@@ -68,12 +69,12 @@ def prepare_tensors(df: pd.DataFrame, a1: int, a2: int) -> TensorDataset:
     # tt2: I(A1=a1 and A2=a2) 序贯时序掩码
     tt2 = torch.tensor(((df['A1'] == a1) & (df['A2'] == a2)).values, dtype=torch.float32).unsqueeze(1)
     
-    return TensorDataset(Z1, Y0, W1, tt1, Z2, Y1, W2, tt2)
+    return TensorDataset(Z1, Y0, A1, W1, tt1, Z2, Y1, W2, tt2)
 
 
 def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str, Any]) -> Tuple[nn.Module, float]:
     # 动态抓取维度：Z1_dim + Y0_dim
-    Z1_peek, Y0_peek, _, _, _, _, _, _ = next(iter(train_loader))
+    Z1_peek, Y0_peek, _, _, _, _, _, _, _ = next(iter(train_loader))
     input_dim = Z1_peek.shape[1] + Y0_peek.shape[1]
     
     model = MLP_for_MMR(input_dim, params).to(device)
@@ -86,7 +87,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
     for epoch in range(params['epochs']):
         model.train()
         for batch in train_loader:
-            Z1, Y0, W1, tt1, _, _, _, _ = [t.to(device) for t in batch]
+            Z1, Y0, _, W1, tt1, _, _, _, _ = [t.to(device) for t in batch]
             
             optimizer.zero_grad()
             pred = model(torch.cat([Z1, Y0], dim=1))
@@ -103,7 +104,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
         with torch.no_grad():
             total_val_loss = 0
             for batch in val_loader:
-                Z1, Y0, W1, tt1, _, _, _, _ = [t.to(device) for t in batch]
+                Z1, Y0, _, W1, tt1, _, _, _, _ = [t.to(device) for t in batch]
                 pred = model(torch.cat([Z1, Y0], dim=1))
                 kernel_matrix = calculate_kernel_matrix(torch.cat([W1, Y0], dim=1))
                 v_loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
@@ -123,7 +124,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
 
 def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Module, params: Dict[str, Any]) -> Tuple[nn.Module, float]:
     # 动态抓取维度：Z1_dim + Z2_dim + Y0_dim + Y1_dim
-    Z1_peek, Y0_peek, _, _, Z2_peek, Y1_peek, _, _ = next(iter(train_loader))
+    Z1_peek, Y0_peek, _, _, _, Z2_peek, Y1_peek, _, _ = next(iter(train_loader))
     input_dim = Z1_peek.shape[1] + Z2_peek.shape[1] + Y0_peek.shape[1] + Y1_peek.shape[1]
     
     model = MLP_for_MMR(input_dim, params).to(device)
@@ -138,7 +139,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
     for epoch in range(params['epochs']):
         model.train()
         for batch in train_loader:
-            Z1, Y0, W1, tt1, Z2, Y1, W2, tt2 = [t.to(device) for t in batch]
+            Z1, Y0, A1, W1, tt1, Z2, Y1, W2, tt2 = [t.to(device) for t in batch]
             
             optimizer.zero_grad()
             
@@ -148,10 +149,12 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
             
             # Predict q22
             pred2 = model(torch.cat([Z1, Z2, Y0, Y1], dim=1))
-            kernel_inputs2 = torch.cat([W1, W2, Y0, Y1], dim=1)
+            # 对固定的 (a1, a2) bridge，二阶段 moment restriction 仍需对 A1 条件化。
+            kernel_inputs2 = torch.cat([A1, W1, W2, Y0, Y1], dim=1)
             kernel_matrix2 = calculate_kernel_matrix(kernel_inputs2)
             
-            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_pred, kernel_matrix2, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
+            q11_target = q11_pred * tt1
+            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
             
             loss2.backward()
             optimizer.step()
@@ -161,12 +164,13 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
         with torch.no_grad():
             total_val_loss = 0
             for batch in val_loader:
-                Z1, Y0, W1, tt1, Z2, Y1, W2, tt2 = [t.to(device) for t in batch]
+                Z1, Y0, A1, W1, tt1, Z2, Y1, W2, tt2 = [t.to(device) for t in batch]
                 q11_pred = model_q11(torch.cat([Z1, Y0], dim=1))
                 pred2 = model(torch.cat([Z1, Z2, Y0, Y1], dim=1))
-                kernel_matrix2 = calculate_kernel_matrix(torch.cat([W1, W2, Y0, Y1], dim=1))
+                kernel_matrix2 = calculate_kernel_matrix(torch.cat([A1, W1, W2, Y0, Y1], dim=1))
                 
-                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_pred, kernel_matrix2, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
+                q11_target = q11_pred * tt1
+                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
                 total_val_loss += v_loss.item()
             total_val_loss /= len(val_loader)
             
@@ -264,11 +268,12 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2:
             preds = model_q22(torch.cat([Z1, Z2, Y0, Y1], dim=1))
             
         preds_np = preds.cpu().numpy().flatten()
+        '''
         if not np.isfinite(preds_np).all():
             print(f"Warning: predict_q22 produced NaN or Inf for combo A1={a1}, A2={a2}. Auto-correcting.")
-            # 将 NaN 替换为 0.0 (无实际贡献)，将 Inf 截断在一定范围内（后续将经过 1%/99% Trimming）
+            # 将 NaN 替换为 0.0 (无实际贡献)，将 Inf 截断在一定范围内
             preds_np = np.nan_to_num(preds_np, nan=0.0, posinf=1e4, neginf=-1e4)
-            
+        '''
         return preds_np
         
     return predict_q22, model_q22, best_params

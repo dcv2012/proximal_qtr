@@ -4,7 +4,7 @@ import torch
 
 origin_para_set = {
     'mu_Y0': -0.35,
-    'sigma_Y0': 0.5, #origin 0.2
+    'sigma_Y0': 0.2,
     'mu_U0': 0.35,
     'sigma_U0': 0.5,
     
@@ -43,8 +43,8 @@ origin_para_set = {
     'sigma_W22': 0.2,
     
     # Huge U effect on Y2 to destroy Naive Estimation. Treat A=1 is actually terrible.
-    # ['ones', 'A2', 'A1', 'A2*A1', 'W21', 'W22', 'W11', 'Y1', 'U1', 'Y0', 'U0']
-    'mu_Y2': [1.0, -3.0, -3.0, -2.0, 0, 0, 0, 0, 6, 0, 6],
+    # ['ones', 'A2', 'A1', 'A2*A1', 'W21', 'W22', 'W11', 'Y1', 'U1', 'Y0', 'U0', 'A1*U0', 'A2*U1', 'A1*Y0', 'A2*Y1']
+    'mu_Y2': [1.0, -1.5, -2.0, -2.0, 0, 0, 0, -1.5, 0, 0, 2, 0, 5, 0, 3],
     'sigma_Y2': 0.2
 
     ## optimal q*: 0.25-1.2112, 0.5-5.38
@@ -85,7 +85,6 @@ def adjust_para_set_for_new_coding(original_para: dict) -> dict:
     new_para['mu_Z21'] = update_z2_coeffs(original_para['mu_Z21'])
     new_para['mu_Z22'] = update_z2_coeffs(original_para['mu_Z22'])
     
-    # Y2 requires update on A2 (idx 1), A1 (idx 2), A2*A1 (idx 3)
     def update_y2_coeffs(arr):
         new_arr = np.array(arr, dtype=float).copy()
         beta_A2 = new_arr[1]
@@ -96,6 +95,23 @@ def adjust_para_set_for_new_coding(original_para: dict) -> dict:
         new_arr[1] = 0.5*beta_A2 + 0.25*beta_Int
         new_arr[2] = 0.5*beta_A1 + 0.25*beta_Int
         new_arr[3] = 0.25*beta_Int
+        
+        if len(new_arr) > 11:
+            beta_A1U0 = new_arr[11]
+            beta_A2U1 = new_arr[12]
+            beta_A1Y0 = new_arr[13]
+            beta_A2Y1 = new_arr[14]
+            
+            new_arr[11] = 0.5 * beta_A1U0
+            new_arr[12] = 0.5 * beta_A2U1
+            new_arr[13] = 0.5 * beta_A1Y0
+            new_arr[14] = 0.5 * beta_A2Y1
+            
+            new_arr[10] += 0.5 * beta_A1U0  # U0
+            new_arr[8]  += 0.5 * beta_A2U1  # U1
+            new_arr[9]  += 0.5 * beta_A1Y0  # Y0
+            new_arr[7]  += 0.5 * beta_A2Y1  # Y1
+            
         return new_arr
         
     new_para['mu_Y2'] = update_y2_coeffs(original_para['mu_Y2'])
@@ -149,7 +165,7 @@ def data_gen(sample_size: int, para_set: dict) -> pd.DataFrame:
     W22 = design_W2 @ np.array(para_set['mu_W22']) + np.random.normal(0, para_set['sigma_W22'], N)
     
     # Y2
-    design_Y2 = np.column_stack([np.ones(N), A2, A1, A2 * A1, W21, W22, W11, Y1, U1, Y0, U0])
+    design_Y2 = np.column_stack([np.ones(N), A2, A1, A2 * A1, W21, W22, W11, Y1, U1, Y0, U0, A1*U0, A2*U1, A1*Y0, A2*Y1])
     Y2 = design_Y2 @ np.array(para_set['mu_Y2']) + np.random.normal(0, para_set['sigma_Y2'], N)
     
     df = pd.DataFrame({
@@ -190,7 +206,7 @@ def intervened_data_gen(sample_size: int, para_set: dict, a: list = [1, 1]) -> p
     W21 = design_W2 @ np.array(para_set['mu_W21']) + np.random.normal(0, para_set['sigma_W21'], N)
     W22 = design_W2 @ np.array(para_set['mu_W22']) + np.random.normal(0, para_set['sigma_W22'], N)
     
-    design_Y2 = np.column_stack([np.ones(N), A2, A1, A2 * A1, W21, W22, W11, Y1, U1, Y0, U0])
+    design_Y2 = np.column_stack([np.ones(N), A2, A1, A2 * A1, W21, W22, W11, Y1, U1, Y0, U0, A1*U0, A2*U1, A1*Y0, A2*Y1])
     Y2 = design_Y2 @ np.array(para_set['mu_Y2']) + np.random.normal(0, para_set['sigma_Y2'], N)
     
     df = pd.DataFrame({
@@ -251,7 +267,7 @@ def dynamic_intervened_data_gen(sample_size: int, para_set: dict, f1=None, f2=No
     W21 = design_W2 @ np.array(para_set['mu_W21']) + np.random.normal(0, para_set['sigma_W21'], N)
     W22 = design_W2 @ np.array(para_set['mu_W22']) + np.random.normal(0, para_set['sigma_W22'], N)
     
-    design_Y2 = np.column_stack([np.ones(N), A2, A1, A2 * A1, W21, W22, W11, Y1, U1, Y0, U0])
+    design_Y2 = np.column_stack([np.ones(N), A2, A1, A2 * A1, W21, W22, W11, Y1, U1, Y0, U0, A1*U0, A2*U1, A1*Y0, A2*Y1])
     Y2 = design_Y2 @ np.array(para_set['mu_Y2']) + np.random.normal(0, para_set['sigma_Y2'], N)
     
     df = pd.DataFrame({

@@ -63,7 +63,7 @@ q22的loss:（q11*tt1）
 
 4.22
 在原setting基础上：nn+phi3+notrim+sp (S2-3000-35,S2-2000-35)
-结果：4.24；4.41
+结果：4.30；4.41
 
 **修改dgp S2：增加Y0,Y1的var，减小W1的var
 *增加q估计中损失关于q的显示l2-正则（lambda_reg）
@@ -79,4 +79,4 @@ q22的loss:（q11*tt1）
 1. baseline：S2-linear-phi1 (4.098), S2-nn-phi3(4.35)>nn-phi3
 2. 原loss：更差（3.729）
 3. S2-nn-phi1-sp：4.14，lr：4.00（较差）
-4. 34：4.08
+4. 删掉est中的截断：4.2505
