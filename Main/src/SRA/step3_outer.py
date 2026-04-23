@@ -42,10 +42,18 @@ class Policy_NN(nn.Module):
         in_dim = input_dim
         for _ in range(num_layers):
             layers.append(nn.Linear(in_dim, hidden_dim))
-            layers.append(nn.LeakyReLU(0.1))
+            layers.append(nn.ReLU())
             in_dim = hidden_dim
         layers.append(nn.Linear(hidden_dim, 1))
         self.net = nn.Sequential(*layers)
+        self._init_weights()
+        
+    def _init_weights(self):
+        for m in self.net.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
         
     def forward(self, h: torch.Tensor) -> torch.Tensor:
         return self.net(h)
