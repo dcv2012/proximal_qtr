@@ -207,7 +207,7 @@ def optimize_outer_hyperparams(df_train: pd.DataFrame, q22_train: np.ndarray, df
         return best_val_loss
         
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    study = optuna.create_study(direction='minimize')
+    study = optuna.create_study(direction='minimize', sampler=optuna.samplers.TPESampler(seed=torch.randint(0, 100000, (1,)).item()))
     study.optimize(objective, n_trials=n_trials)
     
     best_params = study.best_params

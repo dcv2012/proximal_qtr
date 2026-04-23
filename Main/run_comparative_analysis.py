@@ -4,6 +4,7 @@ import argparse
 import os
 import time
 import torch
+import random
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
@@ -98,6 +99,16 @@ def run_comparative_mc(args):
         eval_seed = current_seed + 99999
         print(f"\n[{i+1}/{args.mc_reps}] MC Repetition Seed: {current_seed}")
         
+        # === Enforce Absolute Determinism ===
+        random.seed(current_seed)
+        np.random.seed(current_seed)
+        torch.manual_seed(current_seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(current_seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        
+
         # === 1. Proximal QTR ===
         print(f"  -> Training Proximal QTR (Always Cross-Fitting)")
         f1_p, f2_p, q_est_p, _ = train_policy_prox_qtr_sl(

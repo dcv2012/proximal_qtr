@@ -140,7 +140,7 @@ def optimize_outer_hyperparams(df_train: pd.DataFrame, ipw_train: np.ndarray, df
         _, _, val_loss = train_outer_policies(train_loader, val_loader, params, phi_type, model_type)
         return val_loss
         
-    study = optuna.create_study(direction='minimize')
+    study = optuna.create_study(direction='minimize', sampler=optuna.samplers.TPESampler(seed=torch.randint(0, 100000, (1,)).item()))
     study.optimize(objective, n_trials=n_trials)
     best_params = study.best_params
     best_params['epochs'] = epochs
