@@ -31,9 +31,13 @@ softplus, reps 20
 跑 recp 28 5fold ————不是fold的问题
 
 4.20
-***修改q11的prepare tensor————逻辑修复; q22的loss:（q11*tt1）
+***（重要！！！）修改q11的prepare tensor————逻辑修复; 
+q22的loss:（q11*tt1）
 ***grid search + hejak estimator
+！！丢弃420之前的所有实验结果
+
 实验：S1*2(linear+nn), S2*2(linear+nn) + S2(phi 2,3,4,0), all 30 recps
+
 
 
 4.21 
@@ -41,20 +45,38 @@ softplus, reps 20
 *修改dgp S2 Z2 var
 *sra、oracle+ao/scl 控制
 
-实验：只跑S2(baseline: S2-linear/nn-30)，需对比sp/lr的好坏（S2-nn-31/32），对比是否trim(no trim:S2-nn-33)， 对比fold数量的影响（S2-5fold-linear-20）, 对比phitype(S2-nn-phi3/phi4-30)
+实验：
+1. 只跑S2(baseline: S2-linear/nn-30)，
+2. 对比sp/lr的好坏（S2-nn-31/32），
+3. 对比是否trim(no trim:S2-nn-33)，  
+4. 对比phitype(S2-nn-phi3/phi4-30)
+5. 对比fold数量的影响（S2-5fold-linear-20）
+
 结果：
 1. 相比420：linear差不多，nn表现下降（方差增大）
 2. 加入sp/lr的效果：均有改善，sp效果（4.35）明显好于lr
-3. notrim效果：比普通nn好
-4. phi3：效果更好（4.24）
+3. no_trim效果：比普通nn好
+4. phi3效果更好（4.24）, phi4更差
 5. 改成5fold：没有明显改善
 
+
+
 4.22
-在原setting基础上：nn+phi3+notrim+sp (tmux 3-3000,2-2000)
+在原setting基础上：nn+phi3+notrim+sp (S2-3000-35,S2-2000-35)
+结果：4.24；4.41
 
 **修改dgp S2：增加Y0,Y1的var，减小W1的var
 *增加q估计中损失关于q的显示l2-正则（lambda_reg）
-*增加model的sp
 **删掉trim
 
-实验
+实验:
+1. baseline: S2-linear/nn-30-phi1; S2-linear/nn-30-phi3     4组 
+2. 对比q22loss：q11（原）与q11*tt1 —— S2-nn-31-phi1     1组
+3. 加sp/lr：S2-nn-phi1-32/33 2组
+4. 删掉est中的截断: S2-nn-phi1-34
+
+结果：
+1. baseline：S2-linear-phi1 (4.098), S2-nn-phi3(4.35)>nn-phi3
+2. 原loss：更差（3.729）
+3. S2-nn-phi1-sp：4.14，lr：4.00（较差）
+4. 34：4.08
