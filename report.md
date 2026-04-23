@@ -1,4 +1,6 @@
 实验记录：
+4.14
+*之前的方法逻辑问题，已丢弃前面的数据和记录
 
 4.15 
 no activation function for q22
@@ -80,3 +82,20 @@ q22的loss:（q11*tt1）
 2. 原loss：更差（3.729）
 3. S2-nn-phi1-sp：4.14，lr：4.00（较差）
 4. 删掉est中的截断：4.2505
+
+
+
+4.23
+***「重要调整」DGP（增加异质项）; 原DGP: 6U1,6U0)
+*q22估计中：kernal2加入A1作为输入
+**固定q22loss：统一为q11*tt1
+*已经删掉est中的截断
+**统一策略网络：kaiming初始化、relu激活
+
+实验：
+1. baseline（默认phi1,2000）：S2-linear/nn-30-phi1   2组
+2. 对比phi3：S2-linear/nn-30-phi3    2组 
+3. 改变样本量、reps：S2-nn-1000-30-phi1, S2-nn-5000-30-phi1
+4. 对比fold之后有没有变化：S2-nn-5fold-31
+5. 对比U/V统计量的q22：S2-nn-32（V）
+6. 恢复kernel取消A2: S2-nn-33
