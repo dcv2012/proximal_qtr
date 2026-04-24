@@ -95,7 +95,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
             kernel_inputs = torch.cat([W1, Y0], dim=1)
             kernel_matrix = calculate_kernel_matrix(kernel_inputs)
             
-            loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
+            loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='V_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
             loss.backward()
             optimizer.step()
             
@@ -107,7 +107,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
                 Z1, Y0, _, W1, tt1, _, _, _, _ = [t.to(device) for t in batch]
                 pred = model(torch.cat([Z1, Y0], dim=1))
                 kernel_matrix = calculate_kernel_matrix(torch.cat([W1, Y0], dim=1))
-                v_loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
+                v_loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='V_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
                 total_val_loss += v_loss.item()
             total_val_loss /= len(val_loader)
             
@@ -153,7 +153,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
             kernel_matrix2 = calculate_kernel_matrix(kernel_inputs2)
             
             q11_target = q11_pred * tt1
-            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
+            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name='V_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
             
             loss2.backward()
             optimizer.step()
@@ -169,7 +169,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
                 kernel_matrix2 = calculate_kernel_matrix(torch.cat([W1, W2, Y0, Y1], dim=1))
                 
                 q11_target = q11_pred * tt1
-                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name='U_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
+                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name='V_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
                 total_val_loss += v_loss.item()
             total_val_loss /= len(val_loader)
             
