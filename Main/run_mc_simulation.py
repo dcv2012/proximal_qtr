@@ -12,7 +12,7 @@ from Main.src.Oracle.estimate_Oracle import train_policy_Oracle
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def run_monte_carlo(n_train=1000, seed=20026, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear",
+def run_monte_carlo(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="nn",
                      mc_reps=100, scenario="S1"):
     """
     Monte Carlo 模拟：重复 B 次 (mc_reps) 实验，比较 Proximal QTR, SRA 和 Oracle。
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=285063)
     parser.add_argument("--tau", type=float, default=0.5)
     parser.add_argument("--phi_type", type=int, default=1)
-    parser.add_argument("--model_type", type=str, default="linear")
+    parser.add_argument("--model_type", type=str, default="nn")
     parser.add_argument("--folds", type=int, default=2)
     parser.add_argument("--reps", type=int, default=10, help="Number of MC repetitions")
     parser.add_argument("--scenario", type=str, choices=["S1", "S2"], default="S1")

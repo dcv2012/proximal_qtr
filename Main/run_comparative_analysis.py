@@ -22,7 +22,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Monte Carlo Comparative Analysis for Proximal QTR, SRA, and Oracle")
     
     # 手动可调数据集参数/调参设定
-    parser.add_argument("--n_train", type=int, default=1000, help="Training set sample size (e.g. 500, 1000, 2000, 5000)")
+    parser.add_argument("--n_train", type=int, default=2000, help="Training set sample size (e.g. 500, 1000, 2000, 5000)")
     parser.add_argument("--mc_reps", type=int, default=30, help="Number of Monte Carlo repetitions")
     parser.add_argument("--mc_eval_size", type=int, default=100000, help="Size of data generated for policy evaluation")
     parser.add_argument("--seed", type=int, default=285063, help="Base random seed for data generation and model initializations")
@@ -30,10 +30,10 @@ def parse_arguments():
     # 策略模型参数
     parser.add_argument("--tau", type=float, default=0.5, help="Target quantile level (e.g., 0.5 for median)")
     parser.add_argument("--phi_type", type=int, choices=[0, 1, 2, 3, 4], default=1, help="Type of surrogate loss function")
-    parser.add_argument("--model_type", type=str, choices=["linear", "nn"], default="linear", help="Class of policy function U_n")
+    parser.add_argument("--model_type", type=str, choices=["linear", "nn"], default="nn", help="Class of policy function U_n")
     parser.add_argument("--k_folds", type=int, default=2, help="Number of folds for cross-fitting")
     parser.add_argument("--max_alt_iters", type=int, default=20, help="Max iterations for SCL optimization")
-    parser.add_argument("--dgp", type=str, choices=["S1", "S2"], default="S2", help="Outcome scenario with S1-linear, S2-nonlinear")
+    parser.add_argument("--dgp", type=str, choices=["S1", "S2"], default="S1", help="Outcome scenario with S1-linear, S2-nonlinear")
     parser.add_argument("--optim_mode", type=str, choices=["scl", "ao"], default="ao", help="Optimization framework for SRA/Oracle (scl=Binary Search, ao=Grid Search)")
     parser.add_argument("--no_cf", action="store_true", help="Skip cross-fitting for SRA and Oracle (faster)")
     

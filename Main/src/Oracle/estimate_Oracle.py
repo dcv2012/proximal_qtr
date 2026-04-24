@@ -21,7 +21,7 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
     torch.save({'state_dict': f2.state_dict(), 'hyperparams': best_params}, os.path.join(models_dir, f"f2_{config_str}.pt"))
     print(f"📁 Oracle Policy Models saved with prefix: {config_str}")
 
-def train_policy_Oracle(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2", optim_mode="scl"):
+def train_policy_Oracle(n_train=2000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="nn", save_models=False, dgp="S1", optim_mode="scl"):
     """
     运行基于 Oracle 的全观察（含U）环境策略学习。
     """
@@ -195,7 +195,7 @@ def train_policy_Oracle(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, t
 
     return f1, f2, q_current, best_sv
 
-def train_policy_Oracle_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2", optim_mode="scl"):
+def train_policy_Oracle_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=0.5, phi_type=1, model_type="nn", save_models=False, dgp="S1", optim_mode="scl"):
     """
     不带 Cross-Fitting (CF) 版本的 Oracle 策略学习函数。
     """

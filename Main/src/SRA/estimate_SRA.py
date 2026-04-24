@@ -21,7 +21,7 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
     torch.save({'state_dict': f2.state_dict(), 'hyperparams': best_params}, os.path.join(models_dir, f"f2_{config_str}.pt"))
     print(f"📁 SRA Policy Models saved with prefix: {config_str}")
 
-def train_policy_SRA(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2", optim_mode="scl"):
+def train_policy_SRA(n_train=2000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="nn", save_models=False, dgp="S1", optim_mode="scl"):
     """
     运行基于 SRA (Sequential Randomization Assumption) 的策略学习。
     """
@@ -192,7 +192,7 @@ def train_policy_SRA(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=
         
     return f1, f2, q_current, best_sv
 
-def train_policy_SRA_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2", optim_mode="scl"):
+def train_policy_SRA_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=0.5, phi_type=1, model_type="nn", save_models=False, dgp="S1", optim_mode="scl"):
     """
     不带 Cross-Fitting (CF) 版本的 SRA 策略学习函数。
     """
