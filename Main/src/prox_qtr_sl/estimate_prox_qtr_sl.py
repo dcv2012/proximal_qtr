@@ -51,7 +51,7 @@ def split_fold_with_combo_support(df_fold, test_size=0.2, seed=0):
     sub_val_fold = df_fold.loc[val_indices].reset_index(drop=True)
     return sub_train_fold, sub_val_fold
 
-def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed, df_train):
+def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed, df_train, mmr_loss):
     
     print("----Saving Models---- ")
     # 模型统一保存在 Main/models 目录下 (当前文件在 Main/src/prox_qtr_sl/)
@@ -76,14 +76,14 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
             if not ((sub_train_full['A1'] == a1) & (sub_train_full['A2'] == a2)).any():
                 continue
             print(f"-> Assuring final q22 model for A1={a1}, A2={a2} on full training data...")
-            _, final_q22_model, final_params = estimate_nuisance(sub_train_full, sub_val_full, a1, a2, n_trials=3)
+            _, final_q22_model, final_params = estimate_nuisance(sub_train_full, sub_val_full, a1, a2, n_trials=3, mmr_loss_type=mmr_loss)
             
             q22_path = os.path.join(models_dir, f"q22_a1_{a1}_a2_{a2}_{n_train}.pt")
             torch.save({'state_dict': final_q22_model.state_dict(), 'hyperparams': final_params}, q22_path)
             
     print("📁 4 standalone q22 Nuisance Models securely saved for offline evaluation!")
 
-def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="nn", save_models=False, dgp="S1"):
+def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="nn", save_models=False, dgp="S1", mmr_loss="V_statistic"):
     """
     运行基于 Proximal QTR (Sequential Classification) 的两阶段策略学习全流程。
     支持通过单一 data_generate.py 文件切换 S1 / S2 两种 scenario。
@@ -154,7 +154,7 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=
                     
                 # 仅仅用内部的 sub_train 和 sub_val 联合预测，导出的预估器对于 df_oof_fold 将完全保持无偏
                 # n_trials 统一设置为 10
-                predict_q22_fn, _, _ = estimate_nuisance(sub_train_fold, sub_val_fold, a1, a2, n_trials=10)
+                predict_q22_fn, _, _ = estimate_nuisance(sub_train_fold, sub_val_fold, a1, a2, n_trials=10, mmr_loss_type=mmr_loss)
                 
                 # 对 OOF 集合做预测，但只针对匹配 (A_1=a_1, A_2=a_2) 的观测
                 oof_sub_mask = (df_oof_fold['A1'] == a1) & (df_oof_fold['A2'] == a2)
@@ -305,11 +305,11 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=
     print(f"\n✅ Training Completed! Final optimal q: {q_current:.6f}, Estimated SV: {best_sv:.6f}")
     
     if save_models: # default: False
-        save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed, df_train)
+        save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed, df_train, mmr_loss)
     
     return f1, f2, q_current, best_sv
 
-def train_policy_prox_qtr_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=0.5, phi_type=1, model_type="nn", save_models=False, dgp="S1"):
+def train_policy_prox_qtr_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=0.5, phi_type=1, model_type="nn", save_models=False, dgp="S1", mmr_loss="V_statistic"):
     """
     不带 Cross-Fitting (CF) 版本的策略学习函数。
     直接在全量训练集上估计一轮 q22 桥函数，然后进行策略学习。
@@ -342,7 +342,7 @@ def train_policy_prox_qtr_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=
                 continue
             
             print(f"-> Estimating q22 for A1={a1}, A2={a2} using single split...")
-            predict_q22_fn, _, _ = estimate_nuisance(sub_train_full, sub_val_full, a1, a2, n_trials=10)
+            predict_q22_fn, _, _ = estimate_nuisance(sub_train_full, sub_val_full, a1, a2, n_trials=10, mmr_loss_type=mmr_loss)
             
             # 直接对全量 df_train 进行预测
             train_sub_mask = (df_train['A1'] == a1) & (df_train['A2'] == a2)

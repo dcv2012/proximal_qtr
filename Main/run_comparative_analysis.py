@@ -36,6 +36,7 @@ def parse_arguments():
     parser.add_argument("--dgp", type=str, choices=["S1", "S2"], default="S1", help="Outcome scenario with S1-linear, S2-nonlinear")
     parser.add_argument("--optim_mode", type=str, choices=["scl", "ao"], default="ao", help="Optimization framework for SRA/Oracle (scl=Binary Search, ao=Grid Search)")
     parser.add_argument("--no_cf", action="store_true", help="Skip cross-fitting for SRA and Oracle (faster)")
+    parser.add_argument("--mmr_loss", type=str, choices=["U_statistic", "V_statistic"], default="V_statistic", help="MMR loss formulation for Proximal QTR")
     
     return parser.parse_args()
 
@@ -111,7 +112,7 @@ def run_comparative_mc(args):
             n_train=args.n_train, seed=current_seed, K_folds=args.k_folds, 
             max_alt_iters=args.max_alt_iters, tau=args.tau, 
             phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-            dgp=args.dgp
+            dgp=args.dgp, mmr_loss=args.mmr_loss
         )
         
         df_eval_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device, seed=eval_seed, scenario=args.dgp)

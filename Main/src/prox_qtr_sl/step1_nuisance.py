@@ -72,7 +72,7 @@ def prepare_tensors(df: pd.DataFrame, a1: int, a2: int) -> TensorDataset:
     return TensorDataset(Z1, Y0, A1, W1, tt1, Z2, Y1, W2, tt2)
 
 
-def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str, Any]) -> Tuple[nn.Module, float]:
+def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str, Any], mmr_loss_type: str = 'V_statistic') -> Tuple[nn.Module, float]:
     # 动态抓取维度：Z1_dim + Y0_dim
     Z1_peek, Y0_peek, _, _, _, _, _, _, _ = next(iter(train_loader))
     input_dim = Z1_peek.shape[1] + Y0_peek.shape[1]
@@ -95,7 +95,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
             kernel_inputs = torch.cat([W1, Y0], dim=1)
             kernel_matrix = calculate_kernel_matrix(kernel_inputs)
             
-            loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='V_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
+            loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name=mmr_loss_type, lambda_reg=params.get('lambda_reg', 0.0)))
             loss.backward()
             optimizer.step()
             
@@ -107,7 +107,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
                 Z1, Y0, _, W1, tt1, _, _, _, _ = [t.to(device) for t in batch]
                 pred = model(torch.cat([Z1, Y0], dim=1))
                 kernel_matrix = calculate_kernel_matrix(torch.cat([W1, Y0], dim=1))
-                v_loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name='V_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
+                v_loss = torch.abs(MMR_loss(pred * tt1, torch.ones_like(pred), kernel_matrix, loss_name=mmr_loss_type, lambda_reg=params.get('lambda_reg', 0.0)))
                 total_val_loss += v_loss.item()
             total_val_loss /= len(val_loader)
             
@@ -122,7 +122,7 @@ def train_q11(train_loader: DataLoader, val_loader: DataLoader, params: Dict[str
     model.load_state_dict(best_model_state)
     return model, best_val_loss
 
-def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Module, params: Dict[str, Any]) -> Tuple[nn.Module, float]:
+def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Module, params: Dict[str, Any], mmr_loss_type: str = 'V_statistic') -> Tuple[nn.Module, float]:
     # 动态抓取维度：Z1_dim + Z2_dim + Y0_dim + Y1_dim
     Z1_peek, Y0_peek, _, _, _, Z2_peek, Y1_peek, _, _ = next(iter(train_loader))
     input_dim = Z1_peek.shape[1] + Z2_peek.shape[1] + Y0_peek.shape[1] + Y1_peek.shape[1]
@@ -153,7 +153,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
             kernel_matrix2 = calculate_kernel_matrix(kernel_inputs2)
             
             q11_target = q11_pred * tt1
-            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name='V_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
+            loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name=mmr_loss_type, lambda_reg=params.get('lambda_reg', 0.0)))
             
             loss2.backward()
             optimizer.step()
@@ -169,7 +169,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
                 kernel_matrix2 = calculate_kernel_matrix(torch.cat([W1, W2, Y0, Y1], dim=1))
                 
                 q11_target = q11_pred * tt1
-                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name='V_statistic', lambda_reg=params.get('lambda_reg', 0.0)))
+                v_loss = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name=mmr_loss_type, lambda_reg=params.get('lambda_reg', 0.0)))
                 total_val_loss += v_loss.item()
             total_val_loss /= len(val_loader)
             
@@ -184,7 +184,7 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
     return model, best_val_loss
 
 
-def optimize_hyperparams(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2: int, n_trials: int = 10, batch_size: int = 128) -> Dict[str, Any]:
+def optimize_hyperparams(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2: int, n_trials: int = 10, batch_size: int = 128, mmr_loss_type: str = 'V_statistic') -> Dict[str, Any]:
     """
     使用 Optuna 进行两阶段网络架构及超参数自动调优。
     优化目标是让验证集上的 q22 Loss 达到最小。
@@ -209,10 +209,10 @@ def optimize_hyperparams(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, 
         }
         
         # 1. Train q11
-        model_q11, _ = train_q11(train_loader, val_loader, params)
+        model_q11, _ = train_q11(train_loader, val_loader, params, mmr_loss_type=mmr_loss_type)
         
         # 2. Train q22
-        _, val_loss_q22 = train_q22(train_loader, val_loader, model_q11, params)
+        _, val_loss_q22 = train_q22(train_loader, val_loader, model_q11, params, mmr_loss_type=mmr_loss_type)
         
         # 为了防止在极其糟糕的网络参数下发散，返回极大的 loss
         if np.isnan(val_loss_q22) or np.isinf(val_loss_q22):
@@ -229,13 +229,13 @@ def optimize_hyperparams(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, 
     best_params['epochs'] = 200 # 找到最佳结构后再稍微多跑点epoch进行最终收敛
     return best_params
 
-def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2: int, n_trials: int = 10) -> Tuple[Callable[[pd.DataFrame], np.ndarray], nn.Module, Dict[str, Any]]:
+def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2: int, n_trials: int = 10, mmr_loss_type: str = 'V_statistic') -> Tuple[Callable[[pd.DataFrame], np.ndarray], nn.Module, Dict[str, Any]]:
     """
     封装了调优+最终训练的全工作流。
     返回训练好的 q22 预测器函数。
     """
     print(f"Starting Hyperparameter Optimization for a1={a1}, a2={a2}...")
-    best_params = optimize_hyperparams(df_train, df_val, a1, a2, n_trials=n_trials)
+    best_params = optimize_hyperparams(df_train, df_val, a1, a2, n_trials=n_trials, mmr_loss_type=mmr_loss_type)
     print(f"Best Params found: {best_params}")
     
     train_dataset = prepare_tensors(df_train, a1, a2)
@@ -246,12 +246,12 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2:
     val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False)
     
     print("Training Final q11 Checkpoint...")
-    model_q11, val_q11 = train_q11(train_loader, val_loader, best_params)
+    model_q11, val_q11 = train_q11(train_loader, val_loader, best_params, mmr_loss_type=mmr_loss_type)
     if val_q11 == float('inf'):
         print(f"Warning: Final q11 model diverged for A1={a1}, A2={a2}. Continuing with fallback initial weights.")
     
     print("Training Final q22 Checkpoint...")
-    model_q22, val_q22 = train_q22(train_loader, val_loader, model_q11, best_params)
+    model_q22, val_q22 = train_q22(train_loader, val_loader, model_q11, best_params, mmr_loss_type=mmr_loss_type)
     if val_q22 == float('inf'):
         print(f"Warning: Final q22 model diverged for A1={a1}, A2={a2}. Continuing with fallback initial weights.")
     

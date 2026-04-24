@@ -13,7 +13,7 @@ from Main.src.Oracle.estimate_Oracle import train_policy_Oracle
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def run_monte_carlo(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="nn",
-                     mc_reps=100, scenario="S1"):
+                     mc_reps=100, scenario="S1", mmr_loss="V_statistic"):
     """
     Monte Carlo 模拟：重复 B 次 (mc_reps) 实验，比较 Proximal QTR, SRA 和 Oracle。
     """
@@ -48,7 +48,7 @@ def run_monte_carlo(n_train=2000, seed=20026, K_folds=2, max_alt_iters=10, tau=0
         f1_p, f2_p, q_est_p, _ = train_policy_prox_qtr_sl(
             n_train=n_train, seed=current_seed, K_folds=K_folds, 
             max_alt_iters=max_alt_iters, tau=tau, 
-            phi_type=phi_type, model_type=model_type, save_models=False, dgp=scenario
+            phi_type=phi_type, model_type=model_type, save_models=False, dgp=scenario, mmr_loss=mmr_loss
         )
         df_mc_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device, scenario=scenario)
         q_values_prox.append(np.quantile(df_mc_p['Y2'], tau))
@@ -154,7 +154,7 @@ def run_parameter_grid_analysis(n_reps:int):
                 true_q, q_mean, q_std, regret, rmse, overall_err = run_monte_carlo(
                     n_train=n_train, seed=seed, tau=tau, 
                     phi_type=p_type, model_type=m_type, 
-                    mc_reps=mc_reps, scenario="S1"
+                    mc_reps=mc_reps, scenario="S1", mmr_loss="V_statistic"
                 )
                 
                 # 记录结果 (直接使用返回值)
@@ -194,6 +194,7 @@ if __name__ == "__main__":
     parser.add_argument("--folds", type=int, default=2)
     parser.add_argument("--reps", type=int, default=10, help="Number of MC repetitions")
     parser.add_argument("--scenario", type=str, choices=["S1", "S2"], default="S1")
+    parser.add_argument("--mmr_loss", type=str, choices=["U_statistic", "V_statistic"], default="V_statistic")
     parser.add_argument("--grid", action="store_true", help="Run full parameter grid analysis instead of single run")
     args = parser.parse_args()
     
@@ -203,5 +204,5 @@ if __name__ == "__main__":
         run_monte_carlo(
             n_train=args.n_train, seed=args.seed, K_folds=args.folds, 
             tau=args.tau, phi_type=args.phi_type, model_type=args.model_type,
-            mc_reps=args.reps, scenario=args.scenario
+            mc_reps=args.reps, scenario=args.scenario, mmr_loss=args.mmr_loss
         )
