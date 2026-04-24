@@ -93,9 +93,15 @@ q22的loss:（q11*tt1）
 **统一策略网络：kaiming初始化、relu激活
 
 实验：
-1. baseline（默认phi1,2000）：S2-linear/nn-30-phi1   2组
-2. 对比phi3：S2-linear/nn-30-phi3    2组 
+1. baseline（默认phi1,2000）：S2-linear/nn-30-phi1   
+2. 对比phi3：S2-linear/nn-30-phi3   
 3. 改变样本量、reps：S2-nn-1000-30-phi1, S2-nn-5000-30-phi1
 4. 对比fold之后有没有变化：S2-nn-5fold-31
 5. 对比U/V统计量的q22：S2-nn-32（V）
-6. 恢复kernel取消A2: S2-nn-33
+
+结果：
+1. linear: prox/sra 4.5948/5.1514; nn: prox/sra 4.8036/5.1105
+2. linear: prox/sra 4.8786/5.0894; nn: prox/sra 5.2214/5.1391 (win)
+3. "1000" prox/sra 5.1111/5.1519; "5000" 
+4. 出现了nan
+5. V: prox/sra 5.3099/5.0993 (win)

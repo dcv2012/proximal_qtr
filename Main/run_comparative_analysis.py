@@ -257,9 +257,9 @@ if __name__ == "__main__":
     args = parse_arguments()
     
     # 1. 运行并生成数据记录 (已注释，如需重新跑实验请取消注释)
-    csv_path = run_comparative_mc(args)
+    # csv_path = run_comparative_mc(args)
     
-    '''
+    
     # 2. 给定的结果储存的路径
     res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis')
     fname = f"comparative_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_{args.dgp}_reps{args.mc_reps}.csv"
@@ -267,6 +267,6 @@ if __name__ == "__main__":
     
     # 从数据记录中分析和画图
     analyze_results(csv_path, args, res_dir)
-    '''
+    
     
     

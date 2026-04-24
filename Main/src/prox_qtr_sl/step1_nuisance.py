@@ -267,12 +267,12 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2:
             preds = model_q22(torch.cat([Z1, Z2, Y0, Y1], dim=1))
             
         preds_np = preds.cpu().numpy().flatten()
-        '''
+        
         if not np.isfinite(preds_np).all():
             print(f"Warning: predict_q22 produced NaN or Inf for combo A1={a1}, A2={a2}. Auto-correcting.")
             # 将 NaN 替换为 0.0 (无实际贡献)，将 Inf 截断在一定范围内
             preds_np = np.nan_to_num(preds_np, nan=0.0, posinf=1e4, neginf=-1e4)
-        '''
+        
         return preds_np
         
     return predict_q22, model_q22, best_params
