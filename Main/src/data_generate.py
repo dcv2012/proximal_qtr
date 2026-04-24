@@ -57,10 +57,26 @@ def sanitize_policy_output(raw_output: np.ndarray, stage_name: str) -> np.ndarra
     return raw_output
 
 
-def sample_y2(A1: np.ndarray, A2: np.ndarray, U0: np.ndarray, U1: np.ndarray, sigma_y2: float, scenario: str) -> np.ndarray:
+def sample_y2(common_data: dict, sigma_y2: float, scenario: str) -> np.ndarray:
     scenario = validate_scenario(scenario)
+    
+    # Extract variables for convenience to allow flexible functional forms
+    A1 = common_data["A1"]
+    A2 = common_data["A2"]
+    U0 = common_data["U0"]
+    U1 = common_data["U1"]
+    Y0 = common_data["Y0"]
+    Y1 = common_data["Y1"]
+    Z11 = common_data["Z11"]
+    Z12 = common_data["Z12"]
+    W11 = common_data["W11"]
+    Z21 = common_data["Z21"]
+    Z22 = common_data["Z22"]
+    W21 = common_data["W21"]
+    W22 = common_data["W22"]
+    
     if scenario == "S1":
-        mean_y2 = (
+        '''mean_y2 = (
             -1.5
             - 2.5 * A2
             - 1.5 * A1
@@ -69,7 +85,9 @@ def sample_y2(A1: np.ndarray, A2: np.ndarray, U0: np.ndarray, U1: np.ndarray, si
             + 4.0 * U0
             - 4.0 * A1 * U0
             - 3.0 * A2 * U1
-        )
+        )'''
+        mean_y2 = (-2.25 - 1.5 * A1 - 2.25 * A2 - 0.5 * A1 * A2 - 0.5 * Y1 + 5 * U1 + 4 * U0 - 3 * A2 * U1)
+
     elif scenario == "S2":
         u0_sq = U0 ** 2
         u1_sq = U1 ** 2
@@ -226,13 +244,13 @@ def assemble_dataframe(common_data: dict, Y2: np.ndarray) -> pd.DataFrame:
 
 def data_gen(sample_size: int, para_set: dict, scenario: str = "S1") -> pd.DataFrame:
     common_data = generate_common_latent_process(sample_size, para_set)
-    Y2 = sample_y2(common_data["A1"], common_data["A2"], common_data["U0"], common_data["U1"], para_set["sigma_Y2"], scenario)
+    Y2 = sample_y2(common_data, para_set["sigma_Y2"], scenario)
     return assemble_dataframe(common_data, Y2)
 
 
 def intervened_data_gen(sample_size: int, para_set: dict, a: list = [1, 1], scenario: str = "S1") -> pd.DataFrame:
     common_data = generate_common_latent_process(sample_size, para_set, A1=np.full(sample_size, a[0]), A2=np.full(sample_size, a[1]))
-    Y2 = sample_y2(common_data["A1"], common_data["A2"], common_data["U0"], common_data["U1"], para_set["sigma_Y2"], scenario)
+    Y2 = sample_y2(common_data, para_set["sigma_Y2"], scenario)
     return assemble_dataframe(common_data, Y2)
 
 
@@ -362,5 +380,5 @@ def dynamic_intervened_data_gen(sample_size: int, para_set: dict, f1=None, f2=No
         "W21": W21,
         "W22": W22,
     }
-    Y2 = sample_y2(A1, A2, U0, U1, para_set["sigma_Y2"], scenario)
+    Y2 = sample_y2(common_data, para_set["sigma_Y2"], scenario)
     return assemble_dataframe(common_data, Y2)
