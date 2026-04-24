@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 import scipy.stats as stats
 
-
+from Main.src.data_generate import data_gen, origin_para_set
 from Main.src.prox_qtr_sl.step1_nuisance import estimate_nuisance, prepare_tensors
 from Main.src.prox_qtr_sl.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 from Main.src.prox_qtr_sl.step2_inner import inner_optimization_grid
@@ -86,14 +86,9 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
 def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="linear", save_models=False, dgp="S2"):
     """
     运行基于 Proximal QTR (Sequential Classification) 的两阶段策略学习全流程。
-    支持自动切换 S1 (data_generate) / S2 (data_generate_new) 数据集来源。
+    支持通过单一 data_generate.py 文件切换 S1 / S2 两种 scenario。
     """
     
-    if dgp == "S1":
-        from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
-    elif dgp == "S2":
-        from Main.src.data_generate_new import data_gen, adjust_para_set_for_new_coding, origin_para_set
-
     # 为了复现稳定性，统一设置随机种子
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -106,9 +101,9 @@ def train_policy_prox_qtr_sl(n_train=1000, seed=20026, K_folds=2, max_alt_iters=
     
     # === 1. 数据生成 ===
     print("=== Configuration & Data Generation ===")
-    params = adjust_para_set_for_new_coding(origin_para_set)
-    df_train = data_gen(n_train, params)
-    df_val = data_gen(n_val, params)
+    params = origin_para_set
+    df_train = data_gen(n_train, params, scenario=dgp)
+    df_val = data_gen(n_val, params, scenario=dgp)
     print(f"Generated data: Train({n_train}), Val({n_val})")
     
     
@@ -319,10 +314,6 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
     不带 Cross-Fitting (CF) 版本的策略学习函数。
     直接在全量训练集上估计一轮 q22 桥函数，然后进行策略学习。
     """
-    if dgp == "S1":
-        from Main.src.data_generate import data_gen, adjust_para_set_for_new_coding, origin_para_set
-    elif dgp == "S2":
-        from Main.src.data_generate_new import data_gen, adjust_para_set_for_new_coding, origin_para_set
 
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -331,9 +322,9 @@ def train_policy_prox_qtr_no_cf(n_train=1000, seed=20026, max_alt_iters=30, tau=
     print(f"🚀 Starting Proximal QTR Policy Learning (NO-CF MODE, {dgp})")
     
     n_val = int(n_train * 0.25)
-    params = adjust_para_set_for_new_coding(origin_para_set)
-    df_train = data_gen(n_train, params)
-    df_val = data_gen(n_val, params)
+    params = origin_para_set
+    df_train = data_gen(n_train, params, scenario=dgp)
+    df_val = data_gen(n_val, params, scenario=dgp)
     print(f"Generated data: Train({n_train}), Val({n_val})")
     
     # === 1. 滋扰估计: 一次性全量估计 q22 ===

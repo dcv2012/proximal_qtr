@@ -5,24 +5,24 @@ import numpy as np
 import argparse
 import pandas as pd
 
-from Main.src.data_generate import dynamic_intervened_data_gen, intervened_data_gen, adjust_para_set_for_new_coding, origin_para_set
+from Main.src.data_generate import dynamic_intervened_data_gen, intervened_data_gen, origin_para_set
 from Main.src.prox_qtr_sl.estimate_prox_qtr_sl import train_policy_prox_qtr_sl
 from Main.src.SRA.estimate_SRA import train_policy_SRA
 from Main.src.Oracle.estimate_Oracle import train_policy_Oracle
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def run_monte_carlo(n_train=1000, seed=20026, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear", 
-                     mc_reps=100):
+def run_monte_carlo(n_train=1000, seed=20026, K_folds=2, max_alt_iters=10, tau=0.5, phi_type=1, model_type="linear",
+                     mc_reps=100, scenario="S1"):
     """
     Monte Carlo 模拟：重复 B 次 (mc_reps) 实验，比较 Proximal QTR, SRA 和 Oracle。
     """
-    params = adjust_para_set_for_new_coding(origin_para_set)
+    params = origin_para_set
     mc_sample_size = 100000
     
     # 提前计算 DGP 的真实上限 (Always Treat [1,1]) 以作为基准
     print(f"\nEstimating Policy Ceiling (Always Treat)...")
-    df_true = intervened_data_gen(mc_sample_size * 20, params, a=[1, 1])
+    df_true = intervened_data_gen(mc_sample_size * 20, params, a=[1, 1], scenario=scenario)
     true_q = np.quantile(df_true['Y2'], tau)
     
     # 初始化三个方法的存储列表: q_true_(of_est) 用于计算后悔; q_train_est 用于计算 Overall Error
@@ -48,9 +48,9 @@ def run_monte_carlo(n_train=1000, seed=20026, K_folds=2, max_alt_iters=10, tau=0
         f1_p, f2_p, q_est_p, _ = train_policy_prox_qtr_sl(
             n_train=n_train, seed=current_seed, K_folds=K_folds, 
             max_alt_iters=max_alt_iters, tau=tau, 
-            phi_type=phi_type, model_type=model_type, save_models=False
+            phi_type=phi_type, model_type=model_type, save_models=False, dgp=scenario
         )
-        df_mc_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device)
+        df_mc_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device, scenario=scenario)
         q_values_prox.append(np.quantile(df_mc_p['Y2'], tau))
         q_train_ests_prox.append(q_est_p)
         
@@ -58,9 +58,9 @@ def run_monte_carlo(n_train=1000, seed=20026, K_folds=2, max_alt_iters=10, tau=0
         print("    [Method] SRA (Logistic)...")
         f1_s, f2_s, q_est_s, _ = train_policy_SRA(
             n_train=n_train, seed=current_seed, tau=tau, 
-            phi_type=phi_type, model_type=model_type, save_models=False
+            phi_type=phi_type, model_type=model_type, save_models=False, dgp=scenario
         )
-        df_mc_s = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_s, f2=f2_s, device=device)
+        df_mc_s = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_s, f2=f2_s, device=device, scenario=scenario)
         q_values_sra.append(np.quantile(df_mc_s['Y2'], tau))
         q_train_ests_sra.append(q_est_s)
         
@@ -68,9 +68,9 @@ def run_monte_carlo(n_train=1000, seed=20026, K_folds=2, max_alt_iters=10, tau=0
         print("    [Method] Oracle (Unbiased)...")
         f1_o, f2_o, q_est_o, _ = train_policy_Oracle(
             n_train=n_train, seed=current_seed, tau=tau, 
-            phi_type=phi_type, model_type=model_type, save_models=False
+            phi_type=phi_type, model_type=model_type, save_models=False, dgp=scenario
         )
-        df_mc_o = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_o, f2=f2_o, device=device)
+        df_mc_o = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_o, f2=f2_o, device=device, scenario=scenario)
         q_values_oracle.append(np.quantile(df_mc_o['Y2'], tau))
         q_train_ests_oracle.append(q_est_o)
         
@@ -154,7 +154,7 @@ def run_parameter_grid_analysis(n_reps:int):
                 true_q, q_mean, q_std, regret, rmse, overall_err = run_monte_carlo(
                     n_train=n_train, seed=seed, tau=tau, 
                     phi_type=p_type, model_type=m_type, 
-                    mc_reps=mc_reps
+                    mc_reps=mc_reps, scenario="S1"
                 )
                 
                 # 记录结果 (直接使用返回值)
@@ -186,13 +186,14 @@ def run_parameter_grid_analysis(n_reps:int):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Monte Carlo Estimator Performance Simulator")
-    parser.add_argument("--n_train", type=int, default=1000)
-    parser.add_argument("--seed", type=int, default=20026)
+    parser.add_argument("--n_train", type=int, default=2000)
+    parser.add_argument("--seed", type=int, default=285063)
     parser.add_argument("--tau", type=float, default=0.5)
     parser.add_argument("--phi_type", type=int, default=1)
     parser.add_argument("--model_type", type=str, default="linear")
     parser.add_argument("--folds", type=int, default=2)
     parser.add_argument("--reps", type=int, default=10, help="Number of MC repetitions")
+    parser.add_argument("--scenario", type=str, choices=["S1", "S2"], default="S1")
     parser.add_argument("--grid", action="store_true", help="Run full parameter grid analysis instead of single run")
     args = parser.parse_args()
     
@@ -202,5 +203,5 @@ if __name__ == "__main__":
         run_monte_carlo(
             n_train=args.n_train, seed=args.seed, K_folds=args.folds, 
             tau=args.tau, phi_type=args.phi_type, model_type=args.model_type,
-            mc_reps=args.reps
+            mc_reps=args.reps, scenario=args.scenario
         )
