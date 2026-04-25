@@ -114,11 +114,25 @@ q22的loss:（q11*tt1）
 *恢复est中的截断（因为昨天4出现了nan）
 *根据昨天结论：phi3>phi1, V>U
 
-*** 最终方案（效果最好）：nn+phi3+Vstat
+*** 效果最好：nn+phi3+Vstat
 实验：
 --S1--
 1. baseline：S1-linear/nn+phi3+Vstat
 2. 500，2000，5000对比: S1-nn-500-phi3
-3. 对比phi1：
+3. 再跑一个昨天的试一下：S1-nn-32-phi1
 
---S2__
+--S2--
+1. baseline: S2-linear/nn-30-phi1/phi3  4组
+2. 500,5000: S2-nn-500-phi3
+
+--4.24 S1（Y2中删掉Y1）--
+1. 原S1-nn-phi3-V: 500,2000  29reps
+2. kernal2 加入A1后：500,2000 28reps
+
+结果：新的S1、S2都不work
+
+
+
+4.25
+
+

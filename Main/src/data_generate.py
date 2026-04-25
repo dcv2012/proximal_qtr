@@ -86,7 +86,7 @@ def sample_y2(common_data: dict, sigma_y2: float, scenario: str) -> np.ndarray:
             - 4.0 * A1 * U0
             - 3.0 * A2 * U1
         )'''
-        mean_y2 = (-2.25 - 1.5 * A1 - 2.25 * A2 - 0.5 * A1 * A2 - 0.5 * Y1 + 5 * U1 + 4 * U0 - 3 * A2 * U1)
+        mean_y2 = (-2.25 - 1.5 * A1 - 2.25 * A2 - 0.5 * A1 * A2  + 5 * U1 + 4 * U0 - 3 * A2 * U1)
 
     elif scenario == "S2":
         u0_sq = U0 ** 2
