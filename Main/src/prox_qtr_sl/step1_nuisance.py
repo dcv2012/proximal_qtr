@@ -237,7 +237,7 @@ def estimate_nuisance(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, a2:
     print(f"Starting Hyperparameter Optimization for a1={a1}, a2={a2}...")
     best_params = optimize_hyperparams(df_train, df_val, a1, a2, n_trials=n_trials, mmr_loss_type=mmr_loss_type)
     print(f"Best Params found: {best_params}")
-    
+
     train_dataset = prepare_tensors(df_train, a1, a2)
     val_dataset = prepare_tensors(df_val, a1, a2)
     

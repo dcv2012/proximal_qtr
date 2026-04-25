@@ -76,27 +76,27 @@ def sample_y2(common_data: dict, sigma_y2: float, scenario: str) -> np.ndarray:
     W22 = common_data["W22"]
     
     if scenario == "S1":
-        '''mean_y2 = (
-            -1.5
-            - 2.5 * A2
-            - 1.5 * A1
+        mean_y2 = (
+            1.0 
+            - 5.0 * U0 - 5.0 * U1 
+            - 1.4 * A1 - 1.92 * A2 
+            + 4.0 * A1 * U0 
+            + 4.0 * A2 * U1 
             - 0.5 * A1 * A2
-            + 5.0 * U1
-            + 4.0 * U0
-            - 4.0 * A1 * U0
-            - 3.0 * A2 * U1
-        )'''
-        mean_y2 = (-2.25 - 1.5 * A1 - 2.25 * A2 - 0.5 * A1 * A2  + 5 * U1 + 4 * U0 - 3 * A2 * U1)
+        )
+        # old: mean_y2 = (-2.25 - 1.5 * A1 - 2.25 * A2 - 0.5 * A1 * A2  + 5 * U1 + 4 * U0 - 3 * A2 * U1)
 
     elif scenario == "S2":
         u0_sq = U0 ** 2
         u1_sq = U1 ** 2
         mean_y2 = (
-            -1.0
-            + 4.0 * u0_sq
-            + 5.0 * u1_sq
-            - (1.0 - 3.0 * u0_sq) * A1
-            - (1.5 - 2.5 * u1_sq) * A2
+            1.0
+            - 5.0 * U0 - 5.0 * U1
+            - 1.5 * A1 - 2.0 * A2
+            + 4.0 * A1 * u0_sq
+            + 4.0 * A2 * u1_sq
+            + 2.0 * A1 * (Y0**2)
+            + 2.5 * A2 * (Y1**2)
             - 0.5 * A1 * A2
         )
     return mean_y2 + np.random.normal(0.0, sigma_y2, len(A1))

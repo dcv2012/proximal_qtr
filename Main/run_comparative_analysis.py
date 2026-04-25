@@ -80,9 +80,9 @@ def run_comparative_mc(args):
     }
     
     # 提前定义好保存路径并在开始前写入由于随时追踪原始结果的文件头
-    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis')
+    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis')   # 改这里
     os.makedirs(res_dir, exist_ok=True)
-    fname = f"comparative_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_{args.dgp}_reps{args.mc_reps}.csv"
+    fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
     save_path = os.path.join(res_dir, fname)
     
     # 注意：为了让 analyze_results 可以读取无噪音的数据格式，我们纯粹记录数据点
@@ -258,8 +258,8 @@ if __name__ == "__main__":
     
     '''
     # 2. 给定的结果储存的路径
-    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis')
-    fname = f"comparative_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_{args.dgp}_reps{args.mc_reps}.csv"
+    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis')       # 改这里  
+    fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
     csv_path = os.path.join(res_dir, fname)
     
     # 从数据记录中分析和画图
