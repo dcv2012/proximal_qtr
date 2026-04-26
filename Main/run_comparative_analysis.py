@@ -52,7 +52,7 @@ def plot_boxplot_from_df(df_valid, args, res_dir):
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     
     # Save figure
-    fname = f"boxplot_n{args.n_train}_tau{args.tau}_phi{args.phi_type}_{args.model_type}_{args.dgp}_reps{args.mc_reps}.png"
+    fname = f"boxplot_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.png"
     save_path = os.path.join(res_dir, fname)
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
@@ -80,7 +80,7 @@ def run_comparative_mc(args):
     }
     
     # 提前定义好保存路径并在开始前写入由于随时追踪原始结果的文件头
-    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis')   # 改这里
+    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis_425')   # 改这里
     os.makedirs(res_dir, exist_ok=True)
     fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
     save_path = os.path.join(res_dir, fname)
@@ -254,17 +254,17 @@ if __name__ == "__main__":
     args = parse_arguments()
     
     # 1. 运行并生成数据记录 (已注释，如需重新跑实验请取消注释)
-    csv_path = run_comparative_mc(args)
+    # csv_path = run_comparative_mc(args)
     
-    '''
+    
     # 2. 给定的结果储存的路径
-    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis')       # 改这里  
+    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis_425')       # 改这里  
     fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
     csv_path = os.path.join(res_dir, fname)
     
     # 从数据记录中分析和画图
     analyze_results(csv_path, args, res_dir)
-    '''
+    
     
     
     

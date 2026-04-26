@@ -132,9 +132,26 @@ q22的loss:（q11*tt1）
 3. 删去额外惩罚项：S1-nn-phi3-2000， 27reps
 
 结果：新的S1、S2都不work
-
+29>28>27 -- S1-nn-phi3-V
 
 
 4.25
+**修改DGP S1,S2
 
+实验计划
+1. 收敛性：1000，2000，5000
+2. 对比phi
+3. 对比model
+4. 对比
 
+实验
+--S1-- no_cf
+1. baseline：S1-nn-phi1/phi3-2000-30
+2. S1-nn-phi3-1000/5000-30
+3. S1-linear-phi1/phi3-30
+
+--S2-- no_cf
+1. baseline：S2-nn-phi1/phi3-2000-30
+2. S2-nn-phi3-500/5000-30
+
+不太好
