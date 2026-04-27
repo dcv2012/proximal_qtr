@@ -80,7 +80,7 @@ def run_comparative_mc(args):
     }
     
     # 提前定义好保存路径并在开始前写入由于随时追踪原始结果的文件头
-    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis_425')   # 改这里
+    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis_426')   # 改这里
     os.makedirs(res_dir, exist_ok=True)
     fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
     save_path = os.path.join(res_dir, fname)
@@ -254,11 +254,11 @@ if __name__ == "__main__":
     args = parse_arguments()
     
     # 1. 运行并生成数据记录 (已注释，如需重新跑实验请取消注释)
-    # csv_path = run_comparative_mc(args)
+    #csv_path = run_comparative_mc(args)
     
     
     # 2. 给定的结果储存的路径
-    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis_425')       # 改这里  
+    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis_426')       # 改这里  
     fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
     csv_path = os.path.join(res_dir, fname)
     
