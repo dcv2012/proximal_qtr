@@ -11,6 +11,7 @@ class MLP_for_MMR(nn.Module):
         self.network_width = int(train_params["network_width"])
         self.network_depth = int(train_params["network_depth"])
         self.dropout_prob = train_params.get("dropout_prob", 0.5)
+        self.output_bound = train_params.get("output_bound")
 
         self.layer_list = nn.ModuleList()
         self.dropout_list = nn.ModuleList()
@@ -39,6 +40,8 @@ class MLP_for_MMR(nn.Module):
         x = self.layer_list[-1](x)
         
         # 选择激活函数
+        if self.output_bound is not None:
+            x = float(self.output_bound) * torch.nn.functional.tanh(x)
         # x = torch.nn.functional.softplus(x)
         # x = torch.nn.functional.leaky_relu(x, negative_slope=0.1)
         

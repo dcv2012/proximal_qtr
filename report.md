@@ -170,3 +170,16 @@ S1-NN-PHI3-2000-U/V     31/32
 --S2-- no_cf
 1. S2-nn-phi3-1000/2000/5000-30
 2. S2-linear-phi3-2000-30
+
+4.27
+***q22估计中：kernel2加入A1作为输入（按 method.tex 修正）
+***q22输出层加入 `C*tanh(.)` 有界化，只作用于q22；默认先固定 `C=5`
+*保留q22可为负
+*坏seed小规模测试 `C=3/4/5/6/8/10`：`C=3/4` 偏饱和，`C>=6` 方差和负值比例回升，`C=5` 最平衡
+
+实验计划：
+--S1-- comparative_analysis_427, no_cf
+1. baseline：S1-nn-phi3-500/2000/5000-30
+2. 对比model：S1-linear-phi3-2000-30
+3. 对比phi：S1-nn-phi1-2000-30；S1-linear-phi1-2000-30
+统一设置：tau=0.5, mmr_loss=V_statistic, q22_output_bound=5, comparative analysis, `--no_cf`d

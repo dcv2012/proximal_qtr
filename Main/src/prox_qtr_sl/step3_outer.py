@@ -194,7 +194,7 @@ def optimize_outer_hyperparams(df_train: pd.DataFrame, q22_train: np.ndarray, df
     
     def objective(trial):
         params = {
-            'lr': trial.suggest_float('lr', 1e-5, 1e-2, log=True),
+            'lr': trial.suggest_float('lr', 1e-5, 1e-3, log=True),
             'l2': trial.suggest_float('l2', 1e-8, 1e-6, log=True),
             'epochs': epochs
         }

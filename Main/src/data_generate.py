@@ -87,15 +87,25 @@ def sample_y2(common_data: dict, sigma_y2: float, scenario: str) -> np.ndarray:
         mean_y2 = (-2.25 - 1.5 * A1 - 2.25 * A2 - 0.5 * A1 * A2  + 5 * U1 + 4 * U0 - 3 * A2 * U1 - 0.8 * A1 * U0)
 
     elif scenario == "S2":
-        u0_sq = U0 ** 2
-        u1_sq = U1 ** 2
+        y0_std = (Y0 + 0.35) / 0.2
+        y1_std = (Y1 + 0.05) / 0.6
+
+        # Keep latent confounding close to the stable S1 structure, and place
+        # the nonlinear treatment contrast on observed histories that policies
+        # can actually use.
+        stage1_signal = 0.60 * np.tanh(1.20 * y0_std)
+        stage2_signal = 0.80 * np.tanh(1.00 * y1_std)
         mean_y2 = (
-            5.0 + 0.5 * A1 * (Y0**2)
-            + 3.0 * U0 + 3.0 * U1
-            - 0.35 * A1 - 0.55 * A2
-            + 1.8 * A1 * u0_sq
-            + 2.2 * A2 * u1_sq
-            - 0.5 * A1 * A2
+            -2.25
+            - 1.50 * A1
+            - 2.25 * A2
+            - 0.50 * A1 * A2
+            + 5.00 * U1
+            + 4.00 * U0
+            - 1.20 * A1 * U0
+            - 3.50 * A2 * U1
+            + A1 * stage1_signal
+            + A2 * stage2_signal
         )
         
     return mean_y2 + np.random.normal(0.0, sigma_y2, len(A1))

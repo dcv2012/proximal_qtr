@@ -16,6 +16,7 @@ from Main.src.SRA.estimate_SRA import train_policy_SRA, train_policy_SRA_no_cf
 from Main.src.Oracle.estimate_Oracle import train_policy_Oracle, train_policy_Oracle_no_cf
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+RESULTS_DIRNAME = "comparative_analysis_427"
 
 
 def parse_arguments():
@@ -37,6 +38,7 @@ def parse_arguments():
     parser.add_argument("--optim_mode", type=str, choices=["scl", "ao"], default="ao", help="Optimization framework for SRA/Oracle (scl=Binary Search, ao=Grid Search)")
     parser.add_argument("--no_cf", action="store_true", help="Skip cross-fitting for SRA and Oracle (faster)")
     parser.add_argument("--mmr_loss", type=str, choices=["U_statistic", "V_statistic"], default="V_statistic", help="MMR loss formulation for treatment bridge estimation")
+    parser.add_argument("--q22_output_bound", type=float, default=5.0, help="Symmetric tanh output bound C for q22 bridge estimates")
     
     return parser.parse_args()
 
@@ -80,7 +82,7 @@ def run_comparative_mc(args):
     }
     
     # 提前定义好保存路径并在开始前写入由于随时追踪原始结果的文件头
-    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis_426')   # 改这里
+    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', RESULTS_DIRNAME)
     os.makedirs(res_dir, exist_ok=True)
     fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
     save_path = os.path.join(res_dir, fname)
@@ -112,7 +114,7 @@ def run_comparative_mc(args):
             n_train=args.n_train, seed=current_seed, K_folds=args.k_folds, 
             max_alt_iters=args.max_alt_iters, tau=args.tau, 
             phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-            dgp=args.dgp, mmr_loss=args.mmr_loss
+            dgp=args.dgp, mmr_loss=args.mmr_loss, q22_output_bound=args.q22_output_bound
         )
         
         df_eval_p = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_p, f2=f2_p, device=device, seed=eval_seed, scenario=args.dgp)
@@ -249,22 +251,20 @@ def analyze_results(csv_path, args, res_dir):
 
     # 生成箱线图
     plot_boxplot_from_df(df_valid, args, res_dir)
-
+    
 if __name__ == "__main__":
     args = parse_arguments()
     
-    # 1. 运行并生成数据记录 (已注释，如需重新跑实验请取消注释)
-    #csv_path = run_comparative_mc(args)
+    # 1. 运行并生成数据记录 (如需重新跑实验请取消注释)
+    csv_path = run_comparative_mc(args)
     
-    
-    # 2. 给定的结果储存的路径
-    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', 'comparative_analysis_426')       # 改这里  
+    '''
+    # 2. 给定的结果储存的路径 （如果进行mc实验，则需要注释掉；仅在实验分析时启用）
+    res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', RESULTS_DIRNAME)
     fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
     csv_path = os.path.join(res_dir, fname)
-    
-    # 从数据记录中分析和画图
     analyze_results(csv_path, args, res_dir)
-    
+    '''
     
     
     
