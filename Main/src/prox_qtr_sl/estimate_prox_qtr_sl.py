@@ -86,7 +86,19 @@ def save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type,
             
     print("📁 4 standalone q22 Nuisance Models securely saved for offline evaluation!")
 
-def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=30, tau=0.5, phi_type=1, model_type="nn", save_models=False, dgp="S1", mmr_loss="V_statistic", q22_output_bound=5.0):
+def train_policy_prox_qtr_sl(
+    n_train=2000,
+    seed=20026,
+    K_folds=2,
+    max_alt_iters=30,
+    tau=0.5,
+    phi_type=1,
+    model_type="nn",
+    save_models=False,
+    dgp="S1",
+    mmr_loss="V_statistic",
+    q22_output_bound=5.0,
+):
     """
     运行基于 Proximal QTR (Sequential Classification) 的两阶段策略学习全流程。
     支持通过单一 data_generate.py 文件切换 S1 / S2 两种 scenario。
@@ -252,6 +264,7 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=
                                              q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
     print(f"Optimal configs locked: {best_params}")
     
+    min_alt_iters = 2
     for it in range(max_alt_iters):
         print(f"\n--- Alternating Optim Iteration {it+1}/{max_alt_iters} ---")
         print(f"Current q^(k-1) = {q_current:.6f}")
@@ -289,17 +302,17 @@ def train_policy_prox_qtr_sl(n_train=2000, seed=20026, K_folds=2, max_alt_iters=
             
         print(f"    -> Convergence checks: |q_new - q_current| = {abs(q_new - q_current):.6f}, |SV - target| = {abs(sv_val - (1 - tau)):.6f}, Policy Flips: {policy_flip_count}")
         
-        if abs(sv_val - (1 - tau)) <= epsilon_n:
+        if (it + 1) >= min_alt_iters and abs(sv_val - (1 - tau)) <= epsilon_n:
             print(f"✅ AO Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
             q_current = q_new
             break
             
-        if abs(q_new - q_current) <= delta_n:
+        if (it + 1) >= min_alt_iters and abs(q_new - q_current) <= delta_n:
             print(f"✅ AO Converged by delta_n threshold (q settled): shifed {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
             q_current = q_new
             break
             
-        if it > 0 and policy_flip_count == 0:
+        if (it + 1) >= min_alt_iters and it > 0 and policy_flip_count == 0:
             print(f"✅ AO Converged by Zero-Flip: Policies haven't changed from the last iteration.")
             q_current = q_new
             break
@@ -396,6 +409,7 @@ def train_policy_prox_qtr_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=
                                              q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
     print(f"Optimal configs locked: {best_params}")
     
+    min_alt_iters = 2
     for it in range(max_alt_iters):
         print(f"\n--- Alternating Optim Iteration {it+1}/{max_alt_iters} ---")
         print(f"Current q^(k-1) = {q_current:.6f}")
@@ -429,17 +443,17 @@ def train_policy_prox_qtr_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=
             
         print(f"    -> Convergence checks: |q_new - q_current| = {abs(q_new - q_current):.6f}, |SV - target| = {abs(sv_val - (1 - tau)):.6f}, Policy Flips: {policy_flip_count}")
         
-        if abs(sv_val - (1 - tau)) <= epsilon_n:
+        if (it + 1) >= min_alt_iters and abs(sv_val - (1 - tau)) <= epsilon_n:
             print(f"✅ AO Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
             q_current = q_new
             break
             
-        if abs(q_new - q_current) <= delta_n:
+        if (it + 1) >= min_alt_iters and abs(q_new - q_current) <= delta_n:
             print(f"✅ AO Converged by delta_n threshold (q settled): shifed {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
             q_current = q_new
             break
            
-        if it > 0 and policy_flip_count == 0:
+        if (it + 1) >= min_alt_iters and it > 0 and policy_flip_count == 0:
             print(f"✅ AO Converged by Zero-Flip: Policies haven't changed from the last iteration.")
             q_current = q_new
             break
@@ -454,7 +468,6 @@ def train_policy_prox_qtr_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=
         
     return f1, f2, q_current, best_sv
 
- 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Proximal Quantile-Optimal DTR Pipeline")

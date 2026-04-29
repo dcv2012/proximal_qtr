@@ -182,4 +182,17 @@ S1-NN-PHI3-2000-U/V     31/32
 1. baseline：S1-nn-phi3-500/2000/5000-30
 2. 对比model：S1-linear-phi3-2000-30
 3. 对比phi：S1-nn-phi1-2000-30；S1-linear-phi1-2000-30
-统一设置：tau=0.5, mmr_loss=V_statistic, q22_output_bound=5, comparative analysis, `--no_cf`d
+统一设置：tau=0.5, mmr_loss=V_statistic, q22_output_bound=5, comparative analysis, `--no_cf`
+
+4.28
+***修复：q22 的 `q22_output_bound` 传递到最终重训（避免默认回落 C=5）
+***修复：inner grid 改为右侧可行根优先（避免低 q 根）
+***修复：AO 增加 `min_alt_iters=2`
+*删除本轮诊断临时代码，仅保留必要核心修复
+
+实验计划（第1步）：
+--S1-- comparative_analysis_428, no_cf
+1. baseline：S1-nn-phi3-500/2000/5000-30
+2. 对比model：S1-linear-phi3-2000-30
+3. 对比phi：S1-nn-phi1-2000-30；S1-linear-phi1-2000-30
+统一设置：tau=0.5, mmr_loss=V_statistic, q22_output_bound=5, `--no_cf`

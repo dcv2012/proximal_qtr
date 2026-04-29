@@ -230,6 +230,7 @@ def optimize_hyperparams(df_train: pd.DataFrame, df_val: pd.DataFrame, a1: int, 
     study.optimize(objective, n_trials=n_trials)
     
     best_params = study.best_params
+    best_params['q22_output_bound'] = q22_output_bound
     best_params['epochs'] = 200 # 找到最佳结构后再稍微多跑点epoch进行最终收敛
     return best_params
 
