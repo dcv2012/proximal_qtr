@@ -37,7 +37,7 @@ def inner_optimization(Y2: np.ndarray, A1: np.ndarray, A2: np.ndarray, d1_pred: 
 def inner_optimization_grid(Y2: np.ndarray, ipw_vals: np.ndarray, phi1: np.ndarray, phi2: np.ndarray, grid_Q: np.ndarray, tau: float = 0.5):
     """
     Oracle AO 的内层优化：网格搜索寻找分位数 q。
-    Oracle 的 IPW 目标函数使用了 Hajek 自归一化形式。
+    Oracle 的 IPW 目标函数使用原始统计量（不做 Hajek 自归一化）。
     """
     from typing import Tuple
     Y2 = np.asarray(Y2)
@@ -50,7 +50,7 @@ def inner_optimization_grid(Y2: np.ndarray, ipw_vals: np.ndarray, phi1: np.ndarr
     norm_factor = np.mean(ipw_phi_prod) + 1e-10
     
     # 使用 numpy broadcast 高效计算所有 grid 点的生存值
-    sv_array = np.mean((Y2[:, None] > grid_Q[None, :]) * ipw_phi_prod[:, None], axis=0) / norm_factor
+    sv_array = np.mean((Y2[:, None] > grid_Q[None, :]) * ipw_phi_prod[:, None], axis=0)
     
     best_idx = np.argmin(np.abs(sv_array - (1 - tau)))
     q_new = float(grid_Q[best_idx])

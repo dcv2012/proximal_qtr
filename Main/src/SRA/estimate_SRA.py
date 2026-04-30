@@ -99,11 +99,9 @@ def train_policy_SRA(n_train=2000, seed=20026, K_folds=2, max_alt_iters=30, tau=
             phi1 = stats.norm.cdf((A1_array * f1_train_out) / hn)
             phi2 = stats.norm.cdf((A2_array * f2_train_out) / hn)
                 
-            # SRA 版 Hajek Self-Normalized IPW
+            # SRA 原始 IPW 统计量（不做 Hajek 自归一化）
             ipw_phi_prod = ipw_train_oof * phi1 * phi2
-            norm_factor = np.mean(ipw_phi_prod)
-            raw_sv_val = np.mean((Y2_array > q_current) * ipw_phi_prod)
-            sv_val = raw_sv_val / (norm_factor + 1e-10)
+            sv_val = np.mean((Y2_array > q_current) * ipw_phi_prod)
             best_sv = sv_val
             print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
             
@@ -265,11 +263,9 @@ def train_policy_SRA_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=0.5, 
             phi1 = stats.norm.cdf((A1_array * f1_out) / hn)
             phi2 = stats.norm.cdf((A2_array * f2_out) / hn)
     
-            # SRA 版 Hajek Self-Normalized IPW
+            # SRA 原始 IPW 统计量（不做 Hajek 自归一化）
             ipw_phi_prod = ipw_train_oof * phi1 * phi2
-            norm_factor = np.mean(ipw_phi_prod)
-            raw_sv_val = np.mean((Y2_array > q_current) * ipw_phi_prod)
-            sv_val = raw_sv_val / (norm_factor + 1e-10)
+            sv_val = np.mean((Y2_array > q_current) * ipw_phi_prod)
             best_sv = sv_val
             print(f"    -> Empirical Survival Value (SV) at {q_current:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
             
