@@ -5,13 +5,13 @@ import argparse
 import torch
 from torch.utils.data import DataLoader
 import scipy.stats as stats
+import os
 
 from Main.src.data_generate import data_gen, origin_para_set
 from Main.src.prox_qtr_sl.step1_nuisance import estimate_nuisance, prepare_tensors
-from Main.src.prox_qtr_sl.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 from Main.src.prox_qtr_sl.step2_inner import inner_optimization_grid
+from Main.src.prox_qtr_sl.step3_outer import optimize_outer_hyperparams, train_outer_policies, prepare_outer_tensors
 
-import os
 
 
 def make_treatment_strata(df):
@@ -236,11 +236,16 @@ def train_policy_prox_qtr_sl(
     # 使用全量观测值作为搜索 grid，不再进行分位数范围限制
     grid_Q = np.unique(np.sort(Y2_array))
 
+    # 超参数设置
     epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
     delta_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
-    hn = 0.2 / np.log(n_train)
+    hn = max(0.2 / np.log(n_train), 0.02)
+    flip_rate_thresh = max(0.01, 50 / n_train)
+    flip_rate_micro  = max(0.0001, 5 / n_train)  # 极小 flip：视为完全稳定
+    batch_size = 128
     
     print(f"Alternating Optim Settings -> Grid size: {len(grid_Q)}, epsilon_n: {epsilon_n:.6f}, delta_n: {delta_n:.6f}, hn: {hn:.6f}")
+    print(f"                           -> flip_rate_thresh: {flip_rate_thresh:.4f}, batch_size: {batch_size}")
     
     q_current = np.quantile(Y2_array, tau)
     f1, f2 = None, None
@@ -259,9 +264,15 @@ def train_policy_prox_qtr_sl(
     ], dim=1).to(device_compute)
     
     print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks ---")
-    # 架构和超参数搜索只需在开始时（基于初始的 q_current）执行一次，完全没有必要在每次交替中重复搜索 10x200 epoch。
+    # Fix 5: Optuna n_trials 按 n 分级，大样本搜索更充分
+    if n_train <= 2000:
+        outer_n_trials = 15
+    elif n_train <= 5000:
+        outer_n_trials = 25
+    else:
+        outer_n_trials = 20 + int(0.001 * n_train)
     best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
-                                             q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
+                                             q_current, n_trials=outer_n_trials, epochs=200, phi_type=phi_type, model_type=model_type)
     print(f"Optimal configs locked: {best_params}")
     
     for it in range(max_alt_iters):
@@ -270,8 +281,8 @@ def train_policy_prox_qtr_sl(
         
         train_dataset = prepare_outer_tensors(df_train, q22_train_oof, q_current)
         val_dataset = prepare_outer_tensors(df_val, q22_val_preds, q_current)
-        train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
         
         f1, f2, val_loss = train_outer_policies(train_loader, val_loader, best_params, phi_type=phi_type, model_type=model_type)
         
@@ -296,6 +307,8 @@ def train_policy_prox_qtr_sl(
         
         # Convergence Checks
         policy_flip_count = 0
+        f1_flip_rate = 1.0   # 默认值：第一轮 last_sign 为 None，不触发收敛
+        f2_flip_rate = 1.0
         if last_sign_f1 is not None and last_sign_f2 is not None:
             f1_flip_count = np.sum(sign_f1 != last_sign_f1)
             f2_flip_count = np.sum(sign_f2 != last_sign_f2)
@@ -304,23 +317,24 @@ def train_policy_prox_qtr_sl(
             
             f1_flip_rate = f1_flip_count / n_train
             f2_flip_rate = f2_flip_count / n_train
-            print(f"    -> Policy Flip Rates: F1={f1_flip_rate:.6f}, F2={f2_flip_rate:.6f}")
+            # Fix 3: 用 n 自适应阈值替代固定 5%
+            print(f"    -> Policy Flip Rates: F1={f1_flip_rate:.6f}, F2={f2_flip_rate:.6f} (thresh={flip_rate_thresh:.4f})")
             
         print(f"    -> Convergence checks: |q_new - q_current| = {abs(q_new - q_current):.6f}, |SV - target| = {abs(sv_val - (1 - tau)):.6f}, Policy Flips: {policy_flip_count}")
         
-        if it > 0 and f1_flip_rate <= 0.05 and f2_flip_rate <= 0.05:
+        if it > 0 and f1_flip_rate <= flip_rate_thresh and f2_flip_rate <= flip_rate_thresh:
             if abs(sv_val - (1 - tau)) <= epsilon_n:
                 print(f"✅ AO Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
                 q_current = q_new
                 break
                 
             if abs(q_new - q_current) <= delta_n:
-                print(f"✅ AO Converged by delta_n threshold (q settled): shifed {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
+                print(f"✅ AO Converged by delta_n threshold (q settled): shifted {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
                 q_current = q_new
                 break
                 
-            if f1_flip_rate <= 0.0001 or f2_flip_rate <= 0.0001:
-                print(f"✅ AO Converged by small flip: Policies almost unchanged from the last iteration.")
+            if f1_flip_rate <= flip_rate_micro or f2_flip_rate <= flip_rate_micro:
+                print(f"✅ AO Converged by micro flip: Policies almost unchanged from last iteration.")
                 q_current = q_new
                 break
             
