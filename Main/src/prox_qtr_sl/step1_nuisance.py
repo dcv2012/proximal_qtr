@@ -157,7 +157,6 @@ def train_q22(train_loader: DataLoader, val_loader: DataLoader, model_q11: nn.Mo
             
             q11_target = q11_pred * tt1
             loss2 = torch.abs(MMR_loss(pred2 * tt2, q11_target, kernel_matrix2, loss_name=mmr_loss_type, lambda_reg=params.get('lambda_reg', 0.0)))
-            
             loss2.backward()
             optimizer.step()
             

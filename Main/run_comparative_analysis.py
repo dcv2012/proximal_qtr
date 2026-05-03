@@ -11,12 +11,12 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from Main.src.data_generate import dynamic_intervened_data_gen, origin_para_set
-from Main.src.prox_qtr_sl.estimate_prox_qtr_sl import train_policy_prox_qtr_sl, train_policy_prox_qtr_no_cf
+from Main.src.prox_qtr_sl.estimate_prox_qtr_sl import train_policy_prox_qtr_sl
 from Main.src.SRA.estimate_SRA import train_policy_SRA, train_policy_SRA_no_cf
 from Main.src.Oracle.estimate_Oracle import train_policy_Oracle, train_policy_Oracle_no_cf
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-RESULTS_DIRNAME = "comparative_analysis_428"
+RESULTS_DIRNAME = "comparative_analysis_502"
 
 
 def parse_arguments():
@@ -38,7 +38,7 @@ def parse_arguments():
     parser.add_argument("--optim_mode", type=str, choices=["scl", "ao"], default="ao", help="Optimization framework for SRA/Oracle (scl=Binary Search, ao=Grid Search)")
     parser.add_argument("--no_cf", action="store_true", help="Skip cross-fitting for SRA and Oracle (faster)")
     parser.add_argument("--mmr_loss", type=str, choices=["U_statistic", "V_statistic"], default="V_statistic", help="MMR loss formulation for treatment bridge estimation")
-    parser.add_argument("--q22_output_bound", type=float, default=5.0, help="Symmetric tanh output bound C for q22 bridge estimates")
+    parser.add_argument("--q22_output_bound", type=float, default=4, help="Symmetric tanh output bound C for q22 bridge estimates")
     
     return parser.parse_args()
 
@@ -54,7 +54,7 @@ def plot_boxplot_from_df(df_valid, args, res_dir):
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     
     # Save figure
-    fname = f"boxplot_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.png"
+    fname = f"boxplot_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}__C{args.q22_output_bound}_tau{args.tau}_reps{args.mc_reps}.png"
     save_path = os.path.join(res_dir, fname)
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
@@ -84,7 +84,7 @@ def run_comparative_mc(args):
     # 提前定义好保存路径并在开始前写入由于随时追踪原始结果的文件头
     res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', RESULTS_DIRNAME)
     os.makedirs(res_dir, exist_ok=True)
-    fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
+    fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_C{args.q22_output_bound}_tau{args.tau}_reps{args.mc_reps}.csv"
     save_path = os.path.join(res_dir, fname)
     
     # 注意：为了让 analyze_results 可以读取无噪音的数据格式，我们纯粹记录数据点

@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 
@@ -39,9 +41,11 @@ class MLP_for_MMR(nn.Module):
             x = self.dropout_list[ix](x)  # Dropout
         x = self.layer_list[-1](x)
         
-        # 选择激活函数
+        # q22 输出层有界化：默认 tanh；可通过环境变量并行跑 ablation（relu / C*sigmoid）
         if self.output_bound is not None:
-            x = float(self.output_bound) * torch.nn.functional.tanh(x)
+            c = float(self.output_bound)
+            x = c * torch.nn.functional.tanh(x)
+            
         # x = torch.nn.functional.softplus(x)
         # x = torch.nn.functional.leaky_relu(x, negative_slope=0.1)
         

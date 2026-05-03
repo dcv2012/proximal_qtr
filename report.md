@@ -196,3 +196,58 @@ S1-NN-PHI3-2000-U/V     31/32
 2. 对比model：S1-linear-phi3-2000-30
 3. 对比phi：S1-nn-phi1-2000-30；S1-linear-phi1-2000-30
 统一设置：tau=0.5, mmr_loss=V_statistic, q22_output_bound=5, `--no_cf`
+
+4.29
+*全局 `q22_output_bound` 默认值更新为 `5.5`
+*结果目录切换为 `comparative_analysis_429`
+
+实验计划（执行 exp.md 第1项）：
+--S1-- comparative_analysis_429, no_cf
+1. baseline：S1-nn-phi3-500/2000/5000-30（C=5.5）
+2. 对比model：S1-linear-phi3-2000-30（C=5.5）
+3. 对比phi：S1-nn-phi1-2000-30；S1-linear-phi1-2000-30（C=5.5）
+4. 额外C对比（n=2000, phi3, nn）：C=3/4/6（其余保持 C=5.5）
+统一设置：tau=0.5, mmr_loss=V_statistic, `--no_cf`
+
+结果（最终）：
+1. phi3-nn 不同 n：n=500/2000/5000 的 Prox 均值分别为 5.0533/5.2089/4.9082；SRA 为 5.1046/5.1071/5.0977。仅 n=2000 下 Prox 均值超过 SRA。
+2. n=2000 下 model/phi：phi3-linear 的 Prox 均值最高（5.3670），phi1-nn 为 5.2676，phi3-nn 为 5.2089；但 linear-phi1 出现一次极端低值（-2.5808）。
+3. n=5000 仍存在不稳定：Prox 标准差 1.2993，最差值 -0.0644，低于 4.5 的坏轮次 2 次。
+4. 额外 C=3/4/6 对比结果未在独立目录中保留，无法可靠复原；本日正式结论仅基于 C=5.5 主实验。
+5. 总体：4.29 比 4.30 稳定，但相较 4.28 未整体改善；Prox 尚不能稳定战胜 SRA。
+
+4.30
+**step1: 删去lambda_reg 额外正则化项
+**step2: 改回argmin abs; 不使用hajek归一化
+**estimate: 增加flip rate约束（f1、f2 < 5%），优化flip rate退出条件%0.01
+**对SRA/oracle：删去hajek归一化
+*根据429实验结果，统一设定C=3，默认baseline phi=1
+
+实验：
+额外：1.对C=4，5，6，跑n5000-phi1-nn-30reps
+其他按照原有的实验计划来
+*为避免 4.29 未完成任务污染，新增副本脚本：`Main/run_comparative_analysis_430.py`
+*4.30 结果主目录：`comparative_analysis_430`
+*额外 C 对比目录：`comparative_analysis_430_C4/C5/C6`
+
+
+5.2 
+*改回reg、hajek形式
+*对比C=2，3，4，5
+*对比输出层激活函数的影响（分别切换注释）
+*eps、delta--1e-5
+
+实验：
+1. baseline：nn-phi3-500/2000/5000-C4
+2. 对比C：nn-phi3-5000-C3/5/6
+3. 对比输出层激活函数：手动修改切换 MMR_model 中输出层激活函数分别为relu、C*sigmoid情况进行测试，使用参数nn-phi3-5000-C4-reps31、32
+
+**5.2 执行记录（2026-05-02，按 exp.md 读取本段后启动）**
+
+- 结果写入：`Main/results/comparative_analysis_502/`（`run_comparative_analysis.py` 中 `RESULTS_DIRNAME`）。
+- **解释器**：tmux 下须使用 `/home/ctl/.conda/envs/DEEPMMR/bin/python`（默认 `python` 可能无 `torch`，首次已全部用上述路径重启）。
+- **入口脚本**：默认执行「MC → 汇总 → 箱线图」；若仅读取已有 CSV 做图表，可加 `--analyze_only`。原始 CSV/boxplot 文件名含 `_C{C}_`，与 `--q22_output_bound` 一致。
+- **q22 输出激活消融**：不设环境变量为默认 `tanh`；设置 `MMR_Q22_OUTPUT_ACT=relu` 或 `MMR_Q22_OUTPUT_ACT=sigmoid`（等价于 `C*sigmoid`，有界至 `[0,C]`）。
+- **tmux 会话名**：`ca502_n500_C4`、`ca502_n2000_C4`、`ca502_n5000_C4`、`ca502_n5000_C3`、`ca502_n5000_C5`、`ca502_n5000_C6`、`ca502_act_relu31`（`MMR_Q22_OUTPUT_ACT=relu`、`mc_reps=31`）、`ca502_act_sig32`（`sigmoid`、32）。
+- **日志**：`Main/results/comparative_analysis_502/logs/<会话名>.log`。若长时间为 0 字节，为管道下 Python 块缓冲所致；如需实时可读可改用 `python -u` 或包一层 `stdbuf -oL` 后重启对应会话。
+- **统一**：`--dgp S1 --no_cf --phi_type 3 --model_type nn --tau 0.5`（默认值未写的即脚本默认）。

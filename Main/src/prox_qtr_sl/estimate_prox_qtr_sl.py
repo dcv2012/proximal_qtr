@@ -264,7 +264,6 @@ def train_policy_prox_qtr_sl(
                                              q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
     print(f"Optimal configs locked: {best_params}")
     
-    min_alt_iters = 2
     for it in range(max_alt_iters):
         print(f"\n--- Alternating Optim Iteration {it+1}/{max_alt_iters} ---")
         print(f"Current q^(k-1) = {q_current:.6f}")
@@ -298,24 +297,32 @@ def train_policy_prox_qtr_sl(
         # Convergence Checks
         policy_flip_count = 0
         if last_sign_f1 is not None and last_sign_f2 is not None:
-            policy_flip_count = np.sum(sign_f1 != last_sign_f1) + np.sum(sign_f2 != last_sign_f2)
+            f1_flip_count = np.sum(sign_f1 != last_sign_f1)
+            f2_flip_count = np.sum(sign_f2 != last_sign_f2)
+            policy_flip_count = f1_flip_count + f2_flip_count
+            print(f"    -> Policy Flip Counts: F1={f1_flip_count}, F2={f2_flip_count}")
+            
+            f1_flip_rate = f1_flip_count / n_train
+            f2_flip_rate = f2_flip_count / n_train
+            print(f"    -> Policy Flip Rates: F1={f1_flip_rate:.6f}, F2={f2_flip_rate:.6f}")
             
         print(f"    -> Convergence checks: |q_new - q_current| = {abs(q_new - q_current):.6f}, |SV - target| = {abs(sv_val - (1 - tau)):.6f}, Policy Flips: {policy_flip_count}")
         
-        if (it + 1) >= min_alt_iters and abs(sv_val - (1 - tau)) <= epsilon_n:
-            print(f"✅ AO Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
-            q_current = q_new
-            break
-            
-        if (it + 1) >= min_alt_iters and abs(q_new - q_current) <= delta_n:
-            print(f"✅ AO Converged by delta_n threshold (q settled): shifed {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
-            q_current = q_new
-            break
-            
-        if (it + 1) >= min_alt_iters and it > 0 and policy_flip_count == 0:
-            print(f"✅ AO Converged by Zero-Flip: Policies haven't changed from the last iteration.")
-            q_current = q_new
-            break
+        if it > 0 and f1_flip_rate <= 0.05 and f2_flip_rate <= 0.05:
+            if abs(sv_val - (1 - tau)) <= epsilon_n:
+                print(f"✅ AO Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
+                q_current = q_new
+                break
+                
+            if abs(q_new - q_current) <= delta_n:
+                print(f"✅ AO Converged by delta_n threshold (q settled): shifed {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
+                q_current = q_new
+                break
+                
+            if f1_flip_rate <= 0.0001 or f2_flip_rate <= 0.0001:
+                print(f"✅ AO Converged by small flip: Policies almost unchanged from the last iteration.")
+                q_current = q_new
+                break
             
         q_current = q_new
         last_sign_f1 = sign_f1
@@ -327,147 +334,6 @@ def train_policy_prox_qtr_sl(
         save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed, df_train, mmr_loss, q22_output_bound=q22_output_bound)
     
     return f1, f2, q_current, best_sv
-
-def train_policy_prox_qtr_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=0.5, phi_type=1, model_type="nn", save_models=False, dgp="S1", mmr_loss="V_statistic", q22_output_bound=5.0):
-    """
-    不带 Cross-Fitting (CF) 版本的策略学习函数。
-    直接在全量训练集上估计一轮 q22 桥函数，然后进行策略学习。
-    """
-
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-
-    print("\n" + "="*50)
-    print(f"🚀 Starting Proximal QTR Policy Learning (NO-CF MODE, {dgp})")
-    
-    n_val = int(n_train * 0.25)
-    params = origin_para_set
-    df_train = data_gen(n_train, params, scenario=dgp)
-    df_val = data_gen(n_val, params, scenario=dgp)
-    print(f"Generated data: Train({n_train}), Val({n_val})")
-    
-    # === 1. 滋扰估计: 一次性全量估计 q22 ===
-    print("\n=== Step 1: Pre-estimating Bridge Functions (q22) w/o Cross-Fitting ===")
-    
-    q22_train_oof = np.zeros(len(df_train))
-    q22_val_preds = np.zeros(len(df_val))
-    
-    # 为了调参和早停，简单拆分一次 80/20
-    sub_train_full, sub_val_full = train_test_split(df_train, test_size=0.2, random_state=seed)
-    
-    for a1 in [1, -1]:
-        for a2 in [1, -1]:
-            if not ((sub_train_full['A1'] == a1) & (sub_train_full['A2'] == a2)).any():
-                continue
-            
-            print(f"-> Estimating q22 for A1={a1}, A2={a2} using single split...")
-            predict_q22_fn, _, _ = estimate_nuisance(
-                sub_train_full, sub_val_full, a1, a2, n_trials=10,
-                mmr_loss_type=mmr_loss, q22_output_bound=q22_output_bound
-            )
-            
-            # 直接对全量 df_train 进行预测
-            train_sub_mask = (df_train['A1'] == a1) & (df_train['A2'] == a2)
-            if train_sub_mask.sum() > 0:
-                q22_train_oof[train_sub_mask] = predict_q22_fn(df_train[train_sub_mask])
-                
-            # 对全量 df_val 进行预测
-            val_sub_mask = (df_val['A1'] == a1) & (df_val['A2'] == a2)
-            if val_sub_mask.sum() > 0:
-                q22_val_preds[val_sub_mask] = predict_q22_fn(df_val[val_sub_mask])
-
-    print(f"Weight summary before inner optimization -> Train mean: {np.mean(q22_train_oof):.4f}, Max: {np.max(q22_train_oof):.4f}")
-
-    # === 3. 内外层交替优化 (复用原版逻辑) ===
-    print("\n=== Step 2 & 3: Alternating Optimization for Policy Learning ===")
-    
-    Y2_array = df_train['Y2'].values
-    A1_array = df_train['A1'].values
-    A2_array = df_train['A2'].values
-    # 使用全量观测值作为搜索 grid
-    grid_Q = np.unique(np.sort(Y2_array))
-    epsilon_n = min(1e-4, 0.5 / np.sqrt(n_train))
-    delta_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
-    hn = 0.2 / np.log(n_train)
-    
-    q_current = np.quantile(Y2_array, tau)
-    f1, f2 = None, None
-    best_sv = 0.0
-    last_sign_f1 = None
-    last_sign_f2 = None
-    
-    device_compute = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    H1_train_tensor = torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1).to(device_compute)
-    H2_train_tensor = torch.cat([
-        torch.tensor(df_train['Y0'].values, dtype=torch.float32).unsqueeze(1),
-        torch.tensor(df_train['Y1'].values, dtype=torch.float32).unsqueeze(1),
-        torch.tensor(df_train['A1'].values, dtype=torch.float32).unsqueeze(1)
-    ], dim=1).to(device_compute)
-    
-    print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks ---")
-    best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
-                                             q_current, n_trials=10, epochs=200, phi_type=phi_type, model_type=model_type)
-    print(f"Optimal configs locked: {best_params}")
-    
-    min_alt_iters = 2
-    for it in range(max_alt_iters):
-        print(f"\n--- Alternating Optim Iteration {it+1}/{max_alt_iters} ---")
-        print(f"Current q^(k-1) = {q_current:.6f}")
-
-        train_dataset = prepare_outer_tensors(df_train, q22_train_oof, q_current)
-        val_dataset = prepare_outer_tensors(df_val, q22_val_preds, q_current)
-        train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False)
-        
-        f1, f2, _ = train_outer_policies(train_loader, val_loader, best_params, phi_type=phi_type, model_type=model_type)
-        
-        f1.eval()
-        f2.eval()
-        with torch.no_grad():
-            f1_out = f1(H1_train_tensor).cpu().numpy().flatten()
-            f2_out = f2(H2_train_tensor).cpu().numpy().flatten()
-            
-        phi1 = stats.norm.cdf((A1_array * f1_out) / hn)
-        phi2 = stats.norm.cdf((A2_array * f2_out) / hn)
-
-        sign_f1 = (f1_out > 0).astype(int)
-        sign_f2 = (f2_out > 0).astype(int)
-        
-        q_new, sv_val = inner_optimization_grid(Y2_array, q22_train_oof, phi1, phi2, grid_Q, tau)
-        best_sv = sv_val
-        print(f"    -> Updated Empirical Survival Value (SV) at new q {q_new:.6f}: {sv_val:.6f} (Target: {1-tau:.6f})")
-        
-        policy_flip_count = 0
-        if last_sign_f1 is not None:
-            policy_flip_count = np.sum(sign_f1 != last_sign_f1) + np.sum(sign_f2 != last_sign_f2)
-            
-        print(f"    -> Convergence checks: |q_new - q_current| = {abs(q_new - q_current):.6f}, |SV - target| = {abs(sv_val - (1 - tau)):.6f}, Policy Flips: {policy_flip_count}")
-        
-        if (it + 1) >= min_alt_iters and abs(sv_val - (1 - tau)) <= epsilon_n:
-            print(f"✅ AO Converged by epsilon: |{sv_val:.6f} - {1-tau:.6f}| <= {epsilon_n:.6f}")
-            q_current = q_new
-            break
-            
-        if (it + 1) >= min_alt_iters and abs(q_new - q_current) <= delta_n:
-            print(f"✅ AO Converged by delta_n threshold (q settled): shifed {abs(q_new - q_current):.6f} <= {delta_n:.6f}")
-            q_current = q_new
-            break
-           
-        if (it + 1) >= min_alt_iters and it > 0 and policy_flip_count == 0:
-            print(f"✅ AO Converged by Zero-Flip: Policies haven't changed from the last iteration.")
-            q_current = q_new
-            break
-            
-        q_current = q_new
-        last_sign_f1, last_sign_f2 = sign_f1, sign_f2
-
-    print(f"\n✅ Training Completed! Final optimal q: {q_current:.6f}, Estimated SV: {best_sv:.6f}")
-        
-    if save_models:
-        save_trained_models(f1, f2, best_params, n_train, tau, phi_type, model_type, seed, df_train, mmr_loss, q22_output_bound=q22_output_bound)
-        
-    return f1, f2, q_current, best_sv
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Proximal Quantile-Optimal DTR Pipeline")
