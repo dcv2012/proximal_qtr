@@ -121,6 +121,13 @@ def train_policy_prox_qtr_sl(
     df_val = data_gen(n_val, params, scenario=dgp)
     print(f"Generated data: Train({n_train}), Val({n_val})")
     
+    # 设定optuna搜索次数
+    if n_train <= 2000:
+        n_trials = 15
+    elif n_train <= 5000:
+        n_trials = 30
+    else:
+        n_trials = 25 + int(0.001 * n_train)
     
     # === 2. 第一步: 连续估计滋扰（桥函数 q22）及交叉拟合 ===
     print("\n=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===")
@@ -168,9 +175,8 @@ def train_policy_prox_qtr_sl(
                     continue
                     
                 # 仅仅用内部的 sub_train 和 sub_val 联合预测，导出的预估器对于 df_oof_fold 将完全保持无偏
-                # n_trials 统一设置为 10
                 predict_q22_fn, _, _ = estimate_nuisance(
-                    sub_train_fold, sub_val_fold, a1, a2, n_trials=10,
+                    sub_train_fold, sub_val_fold, a1, a2, n_trials=n_trials,
                     mmr_loss_type=mmr_loss, q22_output_bound=q22_output_bound
                 )
                 
@@ -241,7 +247,7 @@ def train_policy_prox_qtr_sl(
     delta_n = min(1e-4, np.std(Y2_array) / (6 * np.sqrt(n_train)))
     hn = max(0.2 / np.log(n_train), 0.02)
     flip_rate_thresh = max(0.01, 50 / n_train)
-    flip_rate_micro  = max(0.0001, 5 / n_train)  # 极小 flip：视为完全稳定
+    flip_rate_micro  = max(0.001, 5 / n_train)  # 极小 flip：视为完全稳定
     batch_size = 128
     
     print(f"Alternating Optim Settings -> Grid size: {len(grid_Q)}, epsilon_n: {epsilon_n:.6f}, delta_n: {delta_n:.6f}, hn: {hn:.6f}")
@@ -264,15 +270,9 @@ def train_policy_prox_qtr_sl(
     ], dim=1).to(device_compute)
     
     print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks ---")
-    # Fix 5: Optuna n_trials 按 n 分级，大样本搜索更充分
-    if n_train <= 2000:
-        outer_n_trials = 15
-    elif n_train <= 5000:
-        outer_n_trials = 25
-    else:
-        outer_n_trials = 20 + int(0.001 * n_train)
+    
     best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
-                                             q_current, n_trials=outer_n_trials, epochs=200, phi_type=phi_type, model_type=model_type)
+                                             q_current, n_trials=n_trials, epochs=200, phi_type=phi_type, model_type=model_type)
     print(f"Optimal configs locked: {best_params}")
     
     for it in range(max_alt_iters):

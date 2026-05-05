@@ -258,13 +258,11 @@ if __name__ == "__main__":
     # 1. 运行并生成数据记录 (如需重新跑实验请取消注释)
     csv_path = run_comparative_mc(args)
     
-    '''
     # 2. 给定的结果储存的路径 （如果进行mc实验，则需要注释掉；仅在实验分析时启用）
     res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', RESULTS_DIRNAME)
     fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
     csv_path = os.path.join(res_dir, fname)
     analyze_results(csv_path, args, res_dir)
-    '''
     
     
     

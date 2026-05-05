@@ -235,7 +235,6 @@ S1-NN-PHI3-2000-U/V     31/32
 *改回reg、hajek形式
 *对比C=2，3，4，5
 *对比输出层激活函数的影响（分别切换注释）
-*eps、delta--1e-5
 
 实验：
 1. baseline：nn-phi3-500/2000/5000-C4
@@ -251,3 +250,41 @@ S1-NN-PHI3-2000-U/V     31/32
 - **tmux 会话名**：`ca502_n500_C4`、`ca502_n2000_C4`、`ca502_n5000_C4`、`ca502_n5000_C3`、`ca502_n5000_C5`、`ca502_n5000_C6`、`ca502_act_relu31`（`MMR_Q22_OUTPUT_ACT=relu`、`mc_reps=31`）、`ca502_act_sig32`（`sigmoid`、32）。
 - **日志**：`Main/results/comparative_analysis_502/logs/<会话名>.log`。若长时间为 0 字节，为管道下 Python 块缓冲所致；如需实时可读可改用 `python -u` 或包一层 `stdbuf -oL` 后重启对应会话。
 - **统一**：`--dgp S1 --no_cf --phi_type 3 --model_type nn --tau 0.5`（默认值未写的即脚本默认）。
+
+**5.2 分析结论（exp.md §2，数据目录 `comparative_analysis_502`）**
+
+- **Prox vs SRA（均值）**：nn、C4 下 n=500 时 Prox 略高（5.137 vs 5.121）；n=2000、n=5000 时 Prox 略低于 SRA（5.150 vs 5.204；5.055 vs 5.149）。n=5000 扫 C 时仅 **C=3** 的 Prox 均值高于 SRA（5.208 vs 5.149），C4/C5/C6 的 Prox 均值均不优于 SRA。
+- **稳定性**：SRA 标准差在各组均明显低于 Prox；n=5000 且 C≥4 时 Prox 出现重尾（例如 C4 baseline 标准差约 0.96，最低轮次约 0.50；C5/C6 更低甚至略负）。**C=3** 时 Prox 标准差约 0.47，为本批 n=5000 中最稳。
+- **输出激活（n=5000, C4）**：**ReLU**（31 rep）Prox 均值约 4.79、标准差约 1.54，明显劣于 tanh baseline；**C×sigmoid**（32 rep）均值约 5.19，与 SRA 几乎持平且方差小于 ReLU。
+- **model（目录内附加）**：`n2000_phi3_linear` 一组 Prox 均值高于 SRA（5.261 vs 5.170），但单轮 **Prox>SRA 仅 10/30**，与「均值改善」不完全一致，解读需谨慎。
+- **phi / 跨日期**：本目录均为 **phi=3**，无法在 5.2 单目录内完成「不同 phi」横比；与 4.29/4.30 等历史结论的对照见 IDE 内 canvas **`exp-502-52-analysis.canvas.tsx`**（中文完整图表与表格）。
+- **总判**：本批 5.2 中 **Prox 未在均值与稳定性上稳定战胜 SRA**；若继续该 DGP，建议优先固定或搜索 **较小 C（如 3）** 并避免将 **ReLU** 作为 q22 默认输出层。
+
+
+5.3
+*缩小flip阈值--1%；退出条件0.1%
+*增加外层optuna超参数搜索次数 2000-15；5000-30
+
+实验：
+1. baseline: nn-phi3-C4-n500/2000/5000
+2. 在1的baseline下，改变model：500/2000/5000-linear
+3. 改变C：C3/5/6-2000/5000-nn
+
+**5.3 执行记录（2026-05-03）**
+- 检查到 5.2 会话仍在运行（`ca502_*`），为避免污染，按 `exp.md` 要求新建副本脚本：`Main/run_comparative_analysis_503.py`。
+- 新脚本仅切换结果目录为 `comparative_analysis_503`，其余逻辑与当前主脚本一致；统一使用 `--no_cf`。
+- 启动命令统一使用：`/home/ctl/.conda/envs/DEEPMMR/bin/python -u`，并设置 `CUDA_VISIBLE_DEVICES=1` 与旧任务隔离。
+- 结果目录：`Main/results/comparative_analysis_503/`；日志目录：`Main/results/comparative_analysis_503/logs/`。
+- 已启动 12 个 tmux 会话：
+  `ca503_base_nn_n500_C4`、`ca503_base_nn_n2000_C4`、`ca503_base_nn_n5000_C4`、
+  `ca503_model_lin_n500_C4`、`ca503_model_lin_n2000_C4`、`ca503_model_lin_n5000_C4`、
+  `ca503_C3_nn_n2000`、`ca503_C5_nn_n2000`、`ca503_C6_nn_n2000`、
+  `ca503_C3_nn_n5000`、`ca503_C5_nn_n5000`、`ca503_C6_nn_n5000`。
+
+
+
+5.4
+* 设定C=0为使用线性输出
+* 统一optuna次数for nuisance、outer
+实验：
+1. C0-nn/linear-phi3-n500/2000/5000 6组

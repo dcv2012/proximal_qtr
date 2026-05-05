@@ -41,10 +41,11 @@ class MLP_for_MMR(nn.Module):
             x = self.dropout_list[ix](x)  # Dropout
         x = self.layer_list[-1](x)
         
-        # q22 输出层有界化：默认 tanh；可通过环境变量并行跑 ablation（relu / C*sigmoid）
         if self.output_bound is not None:
             c = float(self.output_bound)
-            x = c * torch.nn.functional.tanh(x)
+            if c != 0.0:
+                x = c * torch.nn.functional.tanh(x)
+            # c == 0：约定为线性输出（不做 tanh 有界化），见 report 5.4
             
         # x = torch.nn.functional.softplus(x)
         # x = torch.nn.functional.leaky_relu(x, negative_slope=0.1)
