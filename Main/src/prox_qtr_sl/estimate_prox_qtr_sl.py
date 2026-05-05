@@ -176,7 +176,7 @@ def train_policy_prox_qtr_sl(
                     
                 # 仅仅用内部的 sub_train 和 sub_val 联合预测，导出的预估器对于 df_oof_fold 将完全保持无偏
                 predict_q22_fn, _, _ = estimate_nuisance(
-                    sub_train_fold, sub_val_fold, a1, a2, n_trials=n_trials,
+                    sub_train_fold, sub_val_fold, a1, a2, n_trials=15,
                     mmr_loss_type=mmr_loss, q22_output_bound=q22_output_bound
                 )
                 
