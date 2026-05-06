@@ -121,13 +121,9 @@ def train_policy_prox_qtr_sl(
     df_val = data_gen(n_val, params, scenario=dgp)
     print(f"Generated data: Train({n_train}), Val({n_val})")
     
-    # 设定optuna搜索次数
-    if n_train <= 2000:
-        n_trials = 15
-    elif n_train <= 5000:
-        n_trials = 30
-    else:
-        n_trials = 25 + int(0.001 * n_train)
+    # 5.5: 统一 Optuna 轮次（nuisance / policy 分开）
+    nuisance_n_trials = 20
+    policy_n_trials = 15
     
     # === 2. 第一步: 连续估计滋扰（桥函数 q22）及交叉拟合 ===
     print("\n=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===")
@@ -176,7 +172,7 @@ def train_policy_prox_qtr_sl(
                     
                 # 仅仅用内部的 sub_train 和 sub_val 联合预测，导出的预估器对于 df_oof_fold 将完全保持无偏
                 predict_q22_fn, _, _ = estimate_nuisance(
-                    sub_train_fold, sub_val_fold, a1, a2, n_trials=15,
+                    sub_train_fold, sub_val_fold, a1, a2, n_trials=nuisance_n_trials,
                     mmr_loss_type=mmr_loss, q22_output_bound=q22_output_bound
                 )
                 
@@ -272,7 +268,7 @@ def train_policy_prox_qtr_sl(
     print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks ---")
     
     best_params = optimize_outer_hyperparams(df_train, q22_train_oof, df_val, q22_val_preds, 
-                                             q_current, n_trials=n_trials, epochs=200, phi_type=phi_type, model_type=model_type)
+                                             q_current, n_trials=policy_n_trials, epochs=200, phi_type=phi_type, model_type=model_type)
     print(f"Optimal configs locked: {best_params}")
     
     for it in range(max_alt_iters):

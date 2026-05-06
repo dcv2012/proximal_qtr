@@ -1,0 +1,2698 @@
+
+######################################################################
+   MONTE CARLO COMPARATIVE ANALYSIS (Proximal vs SRA vs Oracle)
+######################################################################
+Configurations:
+ - n_train: 500
+ - mc_reps: 30
+ - mc_eval_size: 100000
+ - seed: 285063
+ - tau: 0.5
+ - phi_type: 3
+ - model_type: linear
+ - k_folds: 2
+ - max_alt_iters: 10
+ - dgp: S1
+ - optim_mode: ao
+ - no_cf: True
+ - prox_only: False
+ - mmr_loss: V_statistic
+ - q22_output_bound: 10.0
+ - Device: cuda
+
+
+[1/30] MC Repetition Seed: 285063
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.39971308588353416, 'lr': 0.004045898111693322, 'l2': 0.004488568924363817, 'lambda_reg': 9.84417040543586e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.4370078120951508, 'lr': 0.003614649729096047, 'l2': 0.003594009092614871, 'lambda_reg': 4.005123861673516e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.2420632626126008, 'lr': 3.89639276850979e-05, 'l2': 0.00018154241000194532, 'lambda_reg': 1.2747512569556192e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.4617962448873305, 'lr': 0.0009250332703042062, 'l2': 0.0028719298646530853, 'lambda_reg': 1.1548866717622826e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.4194038042863532, 'lr': 0.0002943569410907172, 'l2': 0.004230124635912806, 'lambda_reg': 2.2390379259850285e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.2622779562670613, 'lr': 0.005474401868457676, 'l2': 0.000726683052024413, 'lambda_reg': 2.2911746373220415e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.18001252026420705, 'lr': 0.00947636992002839, 'l2': 0.009228533777588243, 'lambda_reg': 1.6765378281410973e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 2, 'dropout_prob': 0.10893898995237959, 'lr': 0.0001085996829540229, 'l2': 0.008533350414896723, 'lambda_reg': 3.505956610561291e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 3.8920, Max: 9.2055
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 0.00012127194951499561, 'l2': 1.9763962402473193e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.056503
+    -> Updated Empirical Survival Value (SV) at new q -2.858971: 0.498314 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.915474, |SV - target| = 0.001686, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = -2.858971
+    -> Updated Empirical Survival Value (SV) at new q -1.834802: 0.500267 (Target: 0.500000)
+    -> Policy Flip Counts: F1=123, F2=9
+    -> Policy Flip Rates: F1=0.246000, F2=0.018000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.024169, |SV - target| = 0.000267, Policy Flips: 132
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = -1.834802
+    -> Updated Empirical Survival Value (SV) at new q -2.728068: 0.504548 (Target: 0.500000)
+    -> Policy Flip Counts: F1=123, F2=38
+    -> Policy Flip Rates: F1=0.246000, F2=0.076000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.893266, |SV - target| = 0.004548, Policy Flips: 161
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = -2.728068
+    -> Updated Empirical Survival Value (SV) at new q 4.337712: 0.497459 (Target: 0.500000)
+    -> Policy Flip Counts: F1=17, F2=469
+    -> Policy Flip Rates: F1=0.034000, F2=0.938000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 7.065781, |SV - target| = 0.002541, Policy Flips: 486
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 4.337712
+    -> Updated Empirical Survival Value (SV) at new q 0.198280: 0.503712 (Target: 0.500000)
+    -> Policy Flip Counts: F1=483, F2=0
+    -> Policy Flip Rates: F1=0.966000, F2=0.000000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 4.139432, |SV - target| = 0.003712, Policy Flips: 483
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 0.198280
+    -> Updated Empirical Survival Value (SV) at new q 4.337712: 0.501707 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=16
+    -> Policy Flip Rates: F1=1.000000, F2=0.032000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 4.139432, |SV - target| = 0.001707, Policy Flips: 516
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = 4.337712
+    -> Updated Empirical Survival Value (SV) at new q 0.557033: 0.499076 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=32
+    -> Policy Flip Rates: F1=1.000000, F2=0.064000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 3.780679, |SV - target| = 0.000924, Policy Flips: 532
+
+--- Alternating Optim Iteration 8/10 ---
+Current q^(k-1) = 0.557033
+    -> Updated Empirical Survival Value (SV) at new q 0.042024: 0.502111 (Target: 0.500000)
+    -> Policy Flip Counts: F1=229, F2=484
+    -> Policy Flip Rates: F1=0.458000, F2=0.968000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.515009, |SV - target| = 0.002111, Policy Flips: 713
+
+--- Alternating Optim Iteration 9/10 ---
+Current q^(k-1) = 0.042024
+    -> Updated Empirical Survival Value (SV) at new q 3.954020: 0.498185 (Target: 0.500000)
+    -> Policy Flip Counts: F1=269, F2=77
+    -> Policy Flip Rates: F1=0.538000, F2=0.154000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 3.911996, |SV - target| = 0.001815, Policy Flips: 346
+
+--- Alternating Optim Iteration 10/10 ---
+Current q^(k-1) = 3.954020
+    -> Updated Empirical Survival Value (SV) at new q 1.488732: 0.499328 (Target: 0.500000)
+    -> Policy Flip Counts: F1=40, F2=251
+    -> Policy Flip Rates: F1=0.080000, F2=0.502000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 2.465288, |SV - target| = 0.000672, Policy Flips: 291
+
+✅ Training Completed! Final optimal q: 1.488732, Estimated SV: 0.499328
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.009891826706993128, 'l2': 2.04220996185295e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.056503
+    -> Updated Empirical Survival Value (SV) at new q 4.068191: 0.501150 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.011688, |SV - target| = 0.001150, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 4.068191
+    -> Updated Empirical Survival Value (SV) at new q 4.068191: 0.501150 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.001150, Policy Flips: 0
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.00643913592484839, 'l2': 1.370199138370214e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.056503
+    -> Updated Empirical Survival Value (SV) at new q 5.891084: 0.498771 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.834581, |SV - target| = 0.001229, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.891084
+    -> Updated Empirical Survival Value (SV) at new q 5.891084: 0.498771 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.001229, Policy Flips: 4
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: 1.336827945185 | SRA: 5.709799358629 | Oracle: 5.709799358629
+
+[2/30] MC Repetition Seed: 285064
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.4848227981771518, 'lr': 0.0001440120728183688, 'l2': 0.00021255943891301956, 'lambda_reg': 0.0002302258981915345, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.10514749965893111, 'lr': 0.007259191521551513, 'l2': 0.00012037082286796467, 'lambda_reg': 0.00039430270227667547, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.44988670083165344, 'lr': 6.308153915387053e-05, 'l2': 0.0012695085619922255, 'lambda_reg': 7.052400481776364e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.26383405166447893, 'lr': 6.869314237497592e-05, 'l2': 0.00014214701178917355, 'lambda_reg': 0.0002710342138685298, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.35627852919628944, 'lr': 1.0231978629514e-05, 'l2': 0.0039002851865760154, 'lambda_reg': 0.00027229185943319575, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.39037460192155715, 'lr': 5.6150814523185034e-05, 'l2': 0.005622387474075966, 'lambda_reg': 4.4948761453951994e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.11650388979429267, 'lr': 0.008232922804989995, 'l2': 0.009499926875809733, 'lambda_reg': 0.00015577685653409514, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.20259835420443983, 'lr': 0.004078314343445071, 'l2': 0.00018044025793686428, 'lambda_reg': 4.943970273375674e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 3.2539, Max: 8.1928
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 5.180680598524235e-05, 'l2': 1.1995106762537116e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.304370
+    -> Updated Empirical Survival Value (SV) at new q 4.510509: 0.498816 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.206140, |SV - target| = 0.001184, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 4.510509
+    -> Updated Empirical Survival Value (SV) at new q -1.371232: 0.499492 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=171
+    -> Policy Flip Rates: F1=0.000000, F2=0.342000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 5.881741, |SV - target| = 0.000508, Policy Flips: 171
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = -1.371232
+    -> Updated Empirical Survival Value (SV) at new q 5.187394: 0.500714 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=176
+    -> Policy Flip Rates: F1=0.000000, F2=0.352000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 6.558625, |SV - target| = 0.000714, Policy Flips: 176
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 5.187394
+    -> Updated Empirical Survival Value (SV) at new q 0.049569: 0.496707 (Target: 0.500000)
+    -> Policy Flip Counts: F1=462, F2=60
+    -> Policy Flip Rates: F1=0.924000, F2=0.120000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 5.137825, |SV - target| = 0.003293, Policy Flips: 522
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 0.049569
+    -> Updated Empirical Survival Value (SV) at new q -2.252999: 0.496107 (Target: 0.500000)
+    -> Policy Flip Counts: F1=462, F2=300
+    -> Policy Flip Rates: F1=0.924000, F2=0.600000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 2.302568, |SV - target| = 0.003893, Policy Flips: 762
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = -2.252999
+    -> Updated Empirical Survival Value (SV) at new q -2.252999: 0.495684 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=181
+    -> Policy Flip Rates: F1=0.000000, F2=0.362000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.004316, Policy Flips: 181
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = -2.252999
+    -> Updated Empirical Survival Value (SV) at new q -2.252999: 0.495925 (Target: 0.500000)
+    -> Policy Flip Counts: F1=1, F2=19
+    -> Policy Flip Rates: F1=0.002000, F2=0.038000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.004075, Policy Flips: 20
+✅ AO Converged by delta_n threshold (q settled): shifted 0.000000 <= 0.000100
+
+✅ Training Completed! Final optimal q: -2.252999, Estimated SV: 0.495925
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.006005022109284597, 'l2': 1.7024763469185535e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.304370
+    -> Updated Empirical Survival Value (SV) at new q 3.907379: 0.499589 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 3.603009, |SV - target| = 0.000411, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 3.907379
+    -> Updated Empirical Survival Value (SV) at new q 3.907379: 0.499625 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.000375, Policy Flips: 2
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.0017271545754244176, 'l2': 4.567573086989926e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.304370
+    -> Updated Empirical Survival Value (SV) at new q 5.347478: 0.498760 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.043109, |SV - target| = 0.001240, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.347478
+    -> Updated Empirical Survival Value (SV) at new q 3.034615: 0.497315 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.312864, |SV - target| = 0.002685, Policy Flips: 747
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 3.034615
+    -> Updated Empirical Survival Value (SV) at new q 6.521914: 0.502333 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 3.487300, |SV - target| = 0.002333, Policy Flips: 474
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 6.521914
+    -> Updated Empirical Survival Value (SV) at new q 3.068442: 0.503261 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 3.453472, |SV - target| = 0.003261, Policy Flips: 420
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 3.068442
+    -> Updated Empirical Survival Value (SV) at new q 6.521914: 0.502333 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 3.453472, |SV - target| = 0.002333, Policy Flips: 424
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 6.521914
+    -> Updated Empirical Survival Value (SV) at new q 6.521914: 0.502333 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.002333, Policy Flips: 18
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: -4.214602382815 | SRA: 5.693481938717 | Oracle: 5.707555457326
+
+[3/30] MC Repetition Seed: 285065
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.17832743933820866, 'lr': 0.00041508655477791453, 'l2': 0.0001020408233743313, 'lambda_reg': 5.493547882597764e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.30926072098358626, 'lr': 0.00638665050786859, 'l2': 0.0007859732158255309, 'lambda_reg': 2.2802270746411286e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.4215404574809839, 'lr': 0.0008512035614662735, 'l2': 0.006360455022913031, 'lambda_reg': 0.00042159987200794045, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 2, 'dropout_prob': 0.30043579265877446, 'lr': 0.0007099318035447618, 'l2': 0.002938332908138804, 'lambda_reg': 0.0003351610243150644, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.10394907798928235, 'lr': 0.0005598043855046536, 'l2': 0.00087212269179617, 'lambda_reg': 0.0006075866667871859, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.34044041043341106, 'lr': 0.0005157157009412043, 'l2': 0.0006162354750298327, 'lambda_reg': 1.1922942964050529e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.32381427666231477, 'lr': 5.913137474867771e-05, 'l2': 0.0012758619427388229, 'lambda_reg': 0.0006661109619583191, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.3102375631908978, 'lr': 0.0002832812532375351, 'l2': 0.0015974195669596477, 'lambda_reg': 3.2810683818612036e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 4.5070, Max: 8.6593
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 1.3605260539280596e-05, 'l2': 4.1239598356574543e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.496652
+    -> Updated Empirical Survival Value (SV) at new q 1.499211: 0.501090 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.002558, |SV - target| = 0.001090, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 1.499211
+    -> Updated Empirical Survival Value (SV) at new q 6.568173: 0.500176 (Target: 0.500000)
+    -> Policy Flip Counts: F1=105, F2=227
+    -> Policy Flip Rates: F1=0.210000, F2=0.454000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 5.068963, |SV - target| = 0.000176, Policy Flips: 332
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 6.568173
+    -> Updated Empirical Survival Value (SV) at new q 6.753686: 0.503998 (Target: 0.500000)
+    -> Policy Flip Counts: F1=4, F2=273
+    -> Policy Flip Rates: F1=0.008000, F2=0.546000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.185513, |SV - target| = 0.003998, Policy Flips: 277
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 6.753686
+    -> Updated Empirical Survival Value (SV) at new q 5.581022: 0.502506 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=500
+    -> Policy Flip Rates: F1=1.000000, F2=1.000000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.172664, |SV - target| = 0.002506, Policy Flips: 1000
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 5.581022
+    -> Updated Empirical Survival Value (SV) at new q 1.247881: 0.498388 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=79
+    -> Policy Flip Rates: F1=1.000000, F2=0.158000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 4.333141, |SV - target| = 0.001612, Policy Flips: 579
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 1.247881
+    -> Updated Empirical Survival Value (SV) at new q 5.581022: 0.502506 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=79
+    -> Policy Flip Rates: F1=1.000000, F2=0.158000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 4.333141, |SV - target| = 0.002506, Policy Flips: 579
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = 5.581022
+    -> Updated Empirical Survival Value (SV) at new q 3.262273: 0.497603 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=236
+    -> Policy Flip Rates: F1=1.000000, F2=0.472000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 2.318749, |SV - target| = 0.002397, Policy Flips: 736
+
+--- Alternating Optim Iteration 8/10 ---
+Current q^(k-1) = 3.262273
+    -> Updated Empirical Survival Value (SV) at new q -3.374982: 0.497922 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=265
+    -> Policy Flip Rates: F1=1.000000, F2=0.530000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 6.637256, |SV - target| = 0.002078, Policy Flips: 765
+
+--- Alternating Optim Iteration 9/10 ---
+Current q^(k-1) = -3.374982
+    -> Updated Empirical Survival Value (SV) at new q 6.836092: 0.494906 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=3
+    -> Policy Flip Rates: F1=1.000000, F2=0.006000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 10.211074, |SV - target| = 0.005094, Policy Flips: 503
+
+--- Alternating Optim Iteration 10/10 ---
+Current q^(k-1) = 6.836092
+    -> Updated Empirical Survival Value (SV) at new q -3.374982: 0.495604 (Target: 0.500000)
+    -> Policy Flip Counts: F1=477, F2=216
+    -> Policy Flip Rates: F1=0.954000, F2=0.432000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 10.211074, |SV - target| = 0.004396, Policy Flips: 693
+
+✅ Training Completed! Final optimal q: -3.374982, Estimated SV: 0.495604
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 1.1769363564272224e-05, 'l2': 9.798402622540998e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.496652
+    -> Updated Empirical Survival Value (SV) at new q -3.539370: 0.497941 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.036022, |SV - target| = 0.002059, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = -3.539370
+    -> Updated Empirical Survival Value (SV) at new q -3.285307: 0.498901 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.254063, |SV - target| = 0.001099, Policy Flips: 157
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = -3.285307
+    -> Updated Empirical Survival Value (SV) at new q -3.399867: 0.501471 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.114560, |SV - target| = 0.001471, Policy Flips: 122
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = -3.399867
+    -> Updated Empirical Survival Value (SV) at new q -3.734547: 0.501176 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.334680, |SV - target| = 0.001176, Policy Flips: 225
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = -3.734547
+    -> Updated Empirical Survival Value (SV) at new q 2.701550: 0.502868 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 6.436097, |SV - target| = 0.002868, Policy Flips: 759
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 2.701550
+    -> Updated Empirical Survival Value (SV) at new q 2.945699: 0.500818 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.244149, |SV - target| = 0.000818, Policy Flips: 561
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = 2.945699
+    -> Updated Empirical Survival Value (SV) at new q -1.092283: 0.500146 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.037983, |SV - target| = 0.000146, Policy Flips: 328
+
+--- Alternating Optim Iteration 8/10 ---
+Current q^(k-1) = -1.092283
+    -> Updated Empirical Survival Value (SV) at new q 0.868820: 0.497046 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.961103, |SV - target| = 0.002954, Policy Flips: 300
+
+--- Alternating Optim Iteration 9/10 ---
+Current q^(k-1) = 0.868820
+    -> Updated Empirical Survival Value (SV) at new q 4.693955: 0.500102 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 3.825135, |SV - target| = 0.000102, Policy Flips: 825
+
+--- Alternating Optim Iteration 10/10 ---
+Current q^(k-1) = 4.693955
+    -> Updated Empirical Survival Value (SV) at new q 2.275966: 0.501452 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.417989, |SV - target| = 0.001452, Policy Flips: 217
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.0006398387189877679, 'l2': 2.970287743335338e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.496652
+    -> Updated Empirical Survival Value (SV) at new q 4.316597: 0.502758 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 3.819945, |SV - target| = 0.002758, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 4.316597
+    -> Updated Empirical Survival Value (SV) at new q 4.875757: 0.498216 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.559160, |SV - target| = 0.001784, Policy Flips: 256
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 4.875757
+    -> Updated Empirical Survival Value (SV) at new q 6.306852: 0.499064 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.431094, |SV - target| = 0.000936, Policy Flips: 198
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 6.306852
+    -> Updated Empirical Survival Value (SV) at new q 4.628076: 0.498682 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.678775, |SV - target| = 0.001318, Policy Flips: 290
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 4.628076
+    -> Updated Empirical Survival Value (SV) at new q 4.628076: 0.498682 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.001318, Policy Flips: 138
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: -3.975540143535 | SRA: 2.540919788890 | Oracle: 5.754680453335
+
+[4/30] MC Repetition Seed: 285066
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.2684848814889892, 'lr': 0.001704456150693623, 'l2': 0.0007657379864848295, 'lambda_reg': 0.0002767559073673967, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.35808160417087054, 'lr': 0.004587477551608034, 'l2': 0.0019294656737874102, 'lambda_reg': 1.606517513071539e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.16168891771863178, 'lr': 5.169718369832123e-05, 'l2': 0.009836266714459951, 'lambda_reg': 3.612626444440025e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.2529644638243066, 'lr': 0.002321215316644461, 'l2': 0.00022901969267856756, 'lambda_reg': 1.2199251152129092e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.19179299695942711, 'lr': 0.0001624080825415217, 'l2': 0.0013113051546140436, 'lambda_reg': 1.2318680274451114e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.47411129713530203, 'lr': 0.004590307419576767, 'l2': 0.0029391974536657466, 'lambda_reg': 4.595942040057164e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.465071472065041, 'lr': 0.000683520514177649, 'l2': 0.0013652335508510859, 'lambda_reg': 8.471291554542468e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.3053352853591028, 'lr': 0.0028721368576024634, 'l2': 0.0006813521025716668, 'lambda_reg': 5.982105483863444e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 4.4395, Max: 8.4649
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 3.172817936851908e-05, 'l2': 1.8785827623621722e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.166331
+    -> Updated Empirical Survival Value (SV) at new q -3.032357: 0.498605 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 3.198688, |SV - target| = 0.001395, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = -3.032357
+    -> Updated Empirical Survival Value (SV) at new q -0.789798: 0.498625 (Target: 0.500000)
+    -> Policy Flip Counts: F1=43, F2=216
+    -> Policy Flip Rates: F1=0.086000, F2=0.432000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 2.242560, |SV - target| = 0.001375, Policy Flips: 259
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = -0.789798
+    -> Updated Empirical Survival Value (SV) at new q -2.297106: 0.499776 (Target: 0.500000)
+    -> Policy Flip Counts: F1=86, F2=315
+    -> Policy Flip Rates: F1=0.172000, F2=0.630000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.507308, |SV - target| = 0.000224, Policy Flips: 401
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = -2.297106
+    -> Updated Empirical Survival Value (SV) at new q 3.994643: 0.497908 (Target: 0.500000)
+    -> Policy Flip Counts: F1=460, F2=84
+    -> Policy Flip Rates: F1=0.920000, F2=0.168000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 6.291749, |SV - target| = 0.002092, Policy Flips: 544
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 3.994643
+    -> Updated Empirical Survival Value (SV) at new q 2.728267: 0.498123 (Target: 0.500000)
+    -> Policy Flip Counts: F1=93, F2=193
+    -> Policy Flip Rates: F1=0.186000, F2=0.386000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.266377, |SV - target| = 0.001877, Policy Flips: 286
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 2.728267
+    -> Updated Empirical Survival Value (SV) at new q 7.233960: 0.505644 (Target: 0.500000)
+    -> Policy Flip Counts: F1=6, F2=219
+    -> Policy Flip Rates: F1=0.012000, F2=0.438000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 4.505694, |SV - target| = 0.005644, Policy Flips: 225
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = 7.233960
+    -> Updated Empirical Survival Value (SV) at new q 0.574924: 0.503209 (Target: 0.500000)
+    -> Policy Flip Counts: F1=291, F2=301
+    -> Policy Flip Rates: F1=0.582000, F2=0.602000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 6.659037, |SV - target| = 0.003209, Policy Flips: 592
+
+--- Alternating Optim Iteration 8/10 ---
+Current q^(k-1) = 0.574924
+    -> Updated Empirical Survival Value (SV) at new q -3.002335: 0.501208 (Target: 0.500000)
+    -> Policy Flip Counts: F1=193, F2=371
+    -> Policy Flip Rates: F1=0.386000, F2=0.742000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 3.577258, |SV - target| = 0.001208, Policy Flips: 564
+
+--- Alternating Optim Iteration 9/10 ---
+Current q^(k-1) = -3.002335
+    -> Updated Empirical Survival Value (SV) at new q 4.413889: 0.499739 (Target: 0.500000)
+    -> Policy Flip Counts: F1=143, F2=420
+    -> Policy Flip Rates: F1=0.286000, F2=0.840000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 7.416224, |SV - target| = 0.000261, Policy Flips: 563
+
+--- Alternating Optim Iteration 10/10 ---
+Current q^(k-1) = 4.413889
+    -> Updated Empirical Survival Value (SV) at new q 2.482857: 0.498185 (Target: 0.500000)
+    -> Policy Flip Counts: F1=143, F2=65
+    -> Policy Flip Rates: F1=0.286000, F2=0.130000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.931032, |SV - target| = 0.001815, Policy Flips: 208
+
+✅ Training Completed! Final optimal q: 2.482857, Estimated SV: 0.498185
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.008790681257116484, 'l2': 4.773978024254168e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.166331
+    -> Updated Empirical Survival Value (SV) at new q 4.897804: 0.495926 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.731473, |SV - target| = 0.004074, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 4.897804
+    -> Updated Empirical Survival Value (SV) at new q 4.897804: 0.495926 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.004074, Policy Flips: 0
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.008920124720276493, 'l2': 3.7153967254125484e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.166331
+    -> Updated Empirical Survival Value (SV) at new q 6.574015: 0.501790 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 6.407683, |SV - target| = 0.001790, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 6.574015
+    -> Updated Empirical Survival Value (SV) at new q 6.574015: 0.501790 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.001790, Policy Flips: 0
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: 4.275317564453 | SRA: 5.652940606220 | Oracle: 5.652940606220
+
+[5/30] MC Repetition Seed: 285067
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.35385913368365185, 'lr': 5.222399232088938e-05, 'l2': 0.0005927710478234971, 'lambda_reg': 6.497401682305568e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.4655669077045682, 'lr': 0.0029529614410229946, 'l2': 0.00038729562079548523, 'lambda_reg': 0.0008461283547929318, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.31890374581794867, 'lr': 0.0001556554783540315, 'l2': 0.0011426305294238086, 'lambda_reg': 0.0007899412779687789, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.19986885363045023, 'lr': 0.0006073779192283447, 'l2': 0.0001824305577035703, 'lambda_reg': 4.420489876029064e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 2, 'dropout_prob': 0.4092751919099108, 'lr': 3.1497088198319504e-05, 'l2': 0.0038230970343899025, 'lambda_reg': 0.00023050162145713882, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.4277467184003816, 'lr': 6.046027396649645e-05, 'l2': 0.00033893283345654473, 'lambda_reg': 8.587797832097529e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.10878757115058049, 'lr': 0.0018833437256865568, 'l2': 0.0007701780338842623, 'lambda_reg': 3.2054374517084034e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.31705547772183196, 'lr': 0.0036294745984780394, 'l2': 0.0004651116754709993, 'lambda_reg': 5.883419799938116e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 4.9910, Max: 9.1128
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 7.53985841030902e-05, 'l2': 2.8071621179708697e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.225566
+    -> Updated Empirical Survival Value (SV) at new q -2.115783: 0.498940 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.341349, |SV - target| = 0.001060, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = -2.115783
+    -> Updated Empirical Survival Value (SV) at new q -3.093370: 0.502787 (Target: 0.500000)
+    -> Policy Flip Counts: F1=101, F2=239
+    -> Policy Flip Rates: F1=0.202000, F2=0.478000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.977588, |SV - target| = 0.002787, Policy Flips: 340
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = -3.093370
+    -> Updated Empirical Survival Value (SV) at new q 2.449797: 0.496090 (Target: 0.500000)
+    -> Policy Flip Counts: F1=332, F2=500
+    -> Policy Flip Rates: F1=0.664000, F2=1.000000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 5.543167, |SV - target| = 0.003910, Policy Flips: 832
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 2.449797
+    -> Updated Empirical Survival Value (SV) at new q 1.665010: 0.503742 (Target: 0.500000)
+    -> Policy Flip Counts: F1=168, F2=11
+    -> Policy Flip Rates: F1=0.336000, F2=0.022000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.784787, |SV - target| = 0.003742, Policy Flips: 179
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 1.665010
+    -> Updated Empirical Survival Value (SV) at new q 1.569432: 0.499185 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=33
+    -> Policy Flip Rates: F1=0.000000, F2=0.066000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.095578, |SV - target| = 0.000815, Policy Flips: 33
+✅ AO Converged by micro flip: Policies almost unchanged from last iteration.
+
+✅ Training Completed! Final optimal q: 1.569432, Estimated SV: 0.499185
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.009417149738835917, 'l2': 5.250334844007087e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.225566
+    -> Updated Empirical Survival Value (SV) at new q 2.936200: 0.496886 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.710634, |SV - target| = 0.003114, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 2.936200
+    -> Updated Empirical Survival Value (SV) at new q 5.180054: 0.500689 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.243854, |SV - target| = 0.000689, Policy Flips: 513
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.180054
+    -> Updated Empirical Survival Value (SV) at new q 5.180054: 0.500689 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.000689, Policy Flips: 9
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.009417149738835917, 'l2': 5.250334844007087e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.225566
+    -> Updated Empirical Survival Value (SV) at new q 4.596549: 0.500368 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.370983, |SV - target| = 0.000368, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 4.596549
+    -> Updated Empirical Survival Value (SV) at new q 5.617973: 0.502561 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.021424, |SV - target| = 0.002561, Policy Flips: 308
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.617973
+    -> Updated Empirical Survival Value (SV) at new q 5.482927: 0.498252 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.135046, |SV - target| = 0.001748, Policy Flips: 184
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 5.482927
+    -> Updated Empirical Survival Value (SV) at new q 5.321399: 0.502866 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.161527, |SV - target| = 0.002866, Policy Flips: 8
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 5.321399
+    -> Updated Empirical Survival Value (SV) at new q 5.605491: 0.497208 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.284092, |SV - target| = 0.002792, Policy Flips: 404
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 5.605491
+    -> Updated Empirical Survival Value (SV) at new q 5.845043: 0.496260 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.239552, |SV - target| = 0.003740, Policy Flips: 199
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = 5.845043
+    -> Updated Empirical Survival Value (SV) at new q 6.182730: 0.497976 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.337687, |SV - target| = 0.002024, Policy Flips: 67
+
+--- Alternating Optim Iteration 8/10 ---
+Current q^(k-1) = 6.182730
+    -> Updated Empirical Survival Value (SV) at new q 5.321399: 0.502866 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.861331, |SV - target| = 0.002866, Policy Flips: 276
+
+--- Alternating Optim Iteration 9/10 ---
+Current q^(k-1) = 5.321399
+    -> Updated Empirical Survival Value (SV) at new q 5.879429: 0.498039 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.558029, |SV - target| = 0.001961, Policy Flips: 218
+
+--- Alternating Optim Iteration 10/10 ---
+Current q^(k-1) = 5.879429
+    -> Updated Empirical Survival Value (SV) at new q 5.610780: 0.503262 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.268648, |SV - target| = 0.003262, Policy Flips: 47
+   Perf  -> Prox: 0.241352455364 | SRA: 4.772224758024 | Oracle: 5.063361863505
+
+[6/30] MC Repetition Seed: 285068
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 2, 'dropout_prob': 0.30693941016837323, 'lr': 3.659243729396491e-05, 'l2': 0.0011328467810949585, 'lambda_reg': 1.588399866965491e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.4366725806457909, 'lr': 0.003066511515813804, 'l2': 0.00473964032520557, 'lambda_reg': 5.308836909209762e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.19217349769922223, 'lr': 0.0016321768170232222, 'l2': 0.00023275237898459506, 'lambda_reg': 0.0009208056702574394, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 2, 'dropout_prob': 0.14806293116180336, 'lr': 0.005148969465550267, 'l2': 0.0022492325950657006, 'lambda_reg': 1.438296276020606e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.3916997003707269, 'lr': 0.0001270723419799659, 'l2': 0.0008730292119855042, 'lambda_reg': 0.000200655944672161, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 2, 'dropout_prob': 0.16163723597569596, 'lr': 6.204815924643567e-05, 'l2': 0.008724808323800142, 'lambda_reg': 0.0001560173884811603, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.1658976688979525, 'lr': 0.0037037936848650617, 'l2': 0.007559853816619947, 'lambda_reg': 3.869810055998028e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.48975677492324754, 'lr': 7.993341106367893e-05, 'l2': 0.00013371399100281845, 'lambda_reg': 7.723444961340296e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 3.7755, Max: 9.0905
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 0.0008571838176699772, 'l2': 2.6178720907460937e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.353781
+    -> Updated Empirical Survival Value (SV) at new q 5.582371: 0.502127 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.936152, |SV - target| = 0.002127, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.582371
+    -> Updated Empirical Survival Value (SV) at new q 6.884373: 0.503912 (Target: 0.500000)
+    -> Policy Flip Counts: F1=9, F2=46
+    -> Policy Flip Rates: F1=0.018000, F2=0.092000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.302002, |SV - target| = 0.003912, Policy Flips: 55
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 6.884373
+    -> Updated Empirical Survival Value (SV) at new q 6.739313: 0.501338 (Target: 0.500000)
+    -> Policy Flip Counts: F1=94, F2=92
+    -> Policy Flip Rates: F1=0.188000, F2=0.184000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.145060, |SV - target| = 0.001338, Policy Flips: 186
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 6.739313
+    -> Updated Empirical Survival Value (SV) at new q 6.739313: 0.500187 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=120
+    -> Policy Flip Rates: F1=0.000000, F2=0.240000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.000187, Policy Flips: 120
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 6.739313
+    -> Updated Empirical Survival Value (SV) at new q 7.194472: 0.502672 (Target: 0.500000)
+    -> Policy Flip Counts: F1=498, F2=136
+    -> Policy Flip Rates: F1=0.996000, F2=0.272000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.455159, |SV - target| = 0.002672, Policy Flips: 634
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 7.194472
+    -> Updated Empirical Survival Value (SV) at new q 7.194472: 0.500820 (Target: 0.500000)
+    -> Policy Flip Counts: F1=2, F2=34
+    -> Policy Flip Rates: F1=0.004000, F2=0.068000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.000820, Policy Flips: 36
+✅ AO Converged by delta_n threshold (q settled): shifted 0.000000 <= 0.000100
+
+✅ Training Completed! Final optimal q: 7.194472, Estimated SV: 0.500820
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.00855934624757191, 'l2': 2.1982223465188005e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.353781
+    -> Updated Empirical Survival Value (SV) at new q 4.616793: 0.495702 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.970574, |SV - target| = 0.004298, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 4.616793
+    -> Updated Empirical Survival Value (SV) at new q 5.879025: 0.501586 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.262232, |SV - target| = 0.001586, Policy Flips: 415
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.879025
+    -> Updated Empirical Survival Value (SV) at new q 5.482491: 0.498938 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.396534, |SV - target| = 0.001062, Policy Flips: 150
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 5.482491
+    -> Updated Empirical Survival Value (SV) at new q 5.482491: 0.498938 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.001062, Policy Flips: 55
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.00855934624757191, 'l2': 2.1982223465188005e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.353781
+    -> Updated Empirical Survival Value (SV) at new q 6.136345: 0.498101 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 6.490126, |SV - target| = 0.001899, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 6.136345
+    -> Updated Empirical Survival Value (SV) at new q 5.879025: 0.499334 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.257320, |SV - target| = 0.000666, Policy Flips: 651
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.879025
+    -> Updated Empirical Survival Value (SV) at new q 7.086894: 0.501993 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.207869, |SV - target| = 0.001993, Policy Flips: 402
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 7.086894
+    -> Updated Empirical Survival Value (SV) at new q 5.879025: 0.499334 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.207869, |SV - target| = 0.000666, Policy Flips: 261
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 5.879025
+    -> Updated Empirical Survival Value (SV) at new q 6.757903: 0.496107 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.878878, |SV - target| = 0.003893, Policy Flips: 87
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 6.757903
+    -> Updated Empirical Survival Value (SV) at new q 6.136345: 0.498101 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.621558, |SV - target| = 0.001899, Policy Flips: 432
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = 6.136345
+    -> Updated Empirical Survival Value (SV) at new q 6.136345: 0.498101 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.001899, Policy Flips: 9
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: 4.702166283848 | SRA: 4.733171447577 | Oracle: 5.694552857378
+
+[7/30] MC Repetition Seed: 285069
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.11489039368917012, 'lr': 0.0013828135289118406, 'l2': 0.007486172865496889, 'lambda_reg': 5.202078841264627e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.40674166167650194, 'lr': 2.4938455349167095e-05, 'l2': 0.00018961596814563746, 'lambda_reg': 0.003997744007767784, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.3477436816540629, 'lr': 0.006874119870563109, 'l2': 0.0014675210916915043, 'lambda_reg': 2.7588616609915306e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.429074374821556, 'lr': 0.00011405601579211803, 'l2': 0.00015090024162166116, 'lambda_reg': 0.0006649722811520872, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.15018742898001808, 'lr': 4.7455803853909786e-05, 'l2': 0.006141051845670626, 'lambda_reg': 8.780653120859231e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.17850681447362443, 'lr': 0.00014206696122996576, 'l2': 0.0006824407529582101, 'lambda_reg': 0.00023065712538731568, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.31939391210272566, 'lr': 7.803559870960228e-05, 'l2': 0.0029107784340153065, 'lambda_reg': 2.7020875654567736e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.22363952105833107, 'lr': 0.007494065941381686, 'l2': 0.0005165627948802655, 'lambda_reg': 0.00014831419076224528, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 3.0847, Max: 8.1668
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 0.0007913673653928718, 'l2': 4.164331995041763e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.136987
+    -> Updated Empirical Survival Value (SV) at new q 7.493227: 0.490636 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 7.356240, |SV - target| = 0.009364, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 7.493227
+    -> Updated Empirical Survival Value (SV) at new q 8.195879: 0.499102 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=259
+    -> Policy Flip Rates: F1=0.000000, F2=0.518000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.702652, |SV - target| = 0.000898, Policy Flips: 259
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 8.195879
+    -> Updated Empirical Survival Value (SV) at new q 8.247969: 0.500215 (Target: 0.500000)
+    -> Policy Flip Counts: F1=3, F2=153
+    -> Policy Flip Rates: F1=0.006000, F2=0.306000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.052090, |SV - target| = 0.000215, Policy Flips: 156
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 8.247969
+    -> Updated Empirical Survival Value (SV) at new q 8.195879: 0.499127 (Target: 0.500000)
+    -> Policy Flip Counts: F1=3, F2=25
+    -> Policy Flip Rates: F1=0.006000, F2=0.050000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.052090, |SV - target| = 0.000873, Policy Flips: 28
+✅ AO Converged by micro flip: Policies almost unchanged from last iteration.
+
+✅ Training Completed! Final optimal q: 8.195879, Estimated SV: 0.499127
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.008560650140679799, 'l2': 2.598645990811684e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.136987
+    -> Updated Empirical Survival Value (SV) at new q 5.533528: 0.498780 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.396541, |SV - target| = 0.001220, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.533528
+    -> Updated Empirical Survival Value (SV) at new q 5.612956: 0.501110 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.079427, |SV - target| = 0.001110, Policy Flips: 5
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.612956
+    -> Updated Empirical Survival Value (SV) at new q 5.533528: 0.498780 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.079427, |SV - target| = 0.001220, Policy Flips: 16
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 5.533528
+    -> Updated Empirical Survival Value (SV) at new q 5.533528: 0.498780 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.001220, Policy Flips: 11
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.008560650140679799, 'l2': 2.598645990811684e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.136987
+    -> Updated Empirical Survival Value (SV) at new q 6.808245: 0.497688 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 6.671258, |SV - target| = 0.002312, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 6.808245
+    -> Updated Empirical Survival Value (SV) at new q 6.808245: 0.497688 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.002312, Policy Flips: 0
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: 5.731000632164 | SRA: 5.734719471189 | Oracle: 5.734452044010
+
+[8/30] MC Repetition Seed: 285070
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.22041814518803823, 'lr': 0.001237458107264149, 'l2': 0.0002111975948466169, 'lambda_reg': 1.23144985499276e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.15257205448065925, 'lr': 0.0004443260793989398, 'l2': 0.0005912887119627957, 'lambda_reg': 0.000713193808655369, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.16270820210585793, 'lr': 0.0025988277479215578, 'l2': 0.001005824042625608, 'lambda_reg': 0.00012498465826941285, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.2788403950635823, 'lr': 0.0003580447728429429, 'l2': 0.0006439084725796113, 'lambda_reg': 3.6353576266846764e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.24577706956330758, 'lr': 0.0013910844233682967, 'l2': 0.0015195154340110668, 'lambda_reg': 1.9282110131065196e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.12975848539242746, 'lr': 0.001792831449654087, 'l2': 0.0004978669110727193, 'lambda_reg': 3.6986907647876418e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.1552951557051339, 'lr': 0.0072197281877040345, 'l2': 0.00613452518480552, 'lambda_reg': 9.907867440579377e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.29638519138617747, 'lr': 0.0001545940421371084, 'l2': 0.0016099313964296335, 'lambda_reg': 0.00016053750820311692, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 3.2842, Max: 8.4662
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 0.0009713026113331706, 'l2': 3.822122980905364e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.875814
+    -> Updated Empirical Survival Value (SV) at new q 5.471468: 0.497683 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.595654, |SV - target| = 0.002317, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.471468
+    -> Updated Empirical Survival Value (SV) at new q 5.471468: 0.496380 (Target: 0.500000)
+    -> Policy Flip Counts: F1=1, F2=243
+    -> Policy Flip Rates: F1=0.002000, F2=0.486000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.003620, Policy Flips: 244
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.471468
+    -> Updated Empirical Survival Value (SV) at new q 6.600506: 0.499031 (Target: 0.500000)
+    -> Policy Flip Counts: F1=379, F2=7
+    -> Policy Flip Rates: F1=0.758000, F2=0.014000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.129038, |SV - target| = 0.000969, Policy Flips: 386
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 6.600506
+    -> Updated Empirical Survival Value (SV) at new q 6.600506: 0.503127 (Target: 0.500000)
+    -> Policy Flip Counts: F1=72, F2=1
+    -> Policy Flip Rates: F1=0.144000, F2=0.002000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.003127, Policy Flips: 73
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 6.600506
+    -> Updated Empirical Survival Value (SV) at new q 6.368894: 0.505148 (Target: 0.500000)
+    -> Policy Flip Counts: F1=49, F2=1
+    -> Policy Flip Rates: F1=0.098000, F2=0.002000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.231612, |SV - target| = 0.005148, Policy Flips: 50
+✅ AO Converged by micro flip: Policies almost unchanged from last iteration.
+
+✅ Training Completed! Final optimal q: 6.368894, Estimated SV: 0.505148
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.0043491542812723934, 'l2': 6.570476961742241e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.875814
+    -> Updated Empirical Survival Value (SV) at new q 4.629752: 0.498068 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 3.753938, |SV - target| = 0.001932, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 4.629752
+    -> Updated Empirical Survival Value (SV) at new q 5.428205: 0.496242 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.798453, |SV - target| = 0.003758, Policy Flips: 500
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.428205
+    -> Updated Empirical Survival Value (SV) at new q 5.428205: 0.496558 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.003442, Policy Flips: 3
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.0043491542812723934, 'l2': 6.570476961742241e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.875814
+    -> Updated Empirical Survival Value (SV) at new q 6.057315: 0.498240 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.181501, |SV - target| = 0.001760, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 6.057315
+    -> Updated Empirical Survival Value (SV) at new q 6.057315: 0.498239 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.001761, Policy Flips: 2
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: 4.703433322230 | SRA: 4.693597505080 | Oracle: 4.706148511240
+
+[9/30] MC Repetition Seed: 285071
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 2, 'dropout_prob': 0.49299763732215485, 'lr': 0.0039016462631466073, 'l2': 0.0011103594136876388, 'lambda_reg': 9.018604438720345e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.17448097507968155, 'lr': 0.0005490663880906896, 'l2': 0.0019094811235267305, 'lambda_reg': 1.0757137147276652e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.33086790363750285, 'lr': 0.0019172268603315351, 'l2': 0.0006795992204082988, 'lambda_reg': 9.154644934588832e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.36313635745222417, 'lr': 0.005608956721174226, 'l2': 0.001149559336640185, 'lambda_reg': 2.027009007641683e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.11176757914153677, 'lr': 0.003659785307426735, 'l2': 0.0012322663761592967, 'lambda_reg': 0.00014422725631831957, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.19379852969585845, 'lr': 0.0006247304174654059, 'l2': 0.0033631923321659585, 'lambda_reg': 5.527541484793897e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.48282782974742344, 'lr': 0.002269589123467003, 'l2': 0.0004787041534399957, 'lambda_reg': 0.0003530805668828118, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.3788994966935316, 'lr': 0.00726499307501928, 'l2': 0.0003128184934208358, 'lambda_reg': 7.3429597135168245e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 4.1743, Max: 9.3967
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 0.00029400726616401237, 'l2': 8.340994747122146e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.401881
+    -> Updated Empirical Survival Value (SV) at new q 3.565618: 0.493568 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 3.163737, |SV - target| = 0.006432, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 3.565618
+    -> Updated Empirical Survival Value (SV) at new q 5.379483: 0.501533 (Target: 0.500000)
+    -> Policy Flip Counts: F1=118, F2=87
+    -> Policy Flip Rates: F1=0.236000, F2=0.174000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.813865, |SV - target| = 0.001533, Policy Flips: 205
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.379483
+    -> Updated Empirical Survival Value (SV) at new q -2.255119: 0.501160 (Target: 0.500000)
+    -> Policy Flip Counts: F1=494, F2=323
+    -> Policy Flip Rates: F1=0.988000, F2=0.646000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 7.634602, |SV - target| = 0.001160, Policy Flips: 817
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = -2.255119
+    -> Updated Empirical Survival Value (SV) at new q -0.762890: 0.498211 (Target: 0.500000)
+    -> Policy Flip Counts: F1=168, F2=309
+    -> Policy Flip Rates: F1=0.336000, F2=0.618000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.492228, |SV - target| = 0.001789, Policy Flips: 477
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = -0.762890
+    -> Updated Empirical Survival Value (SV) at new q 7.312292: 0.496567 (Target: 0.500000)
+    -> Policy Flip Counts: F1=168, F2=376
+    -> Policy Flip Rates: F1=0.336000, F2=0.752000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 8.075182, |SV - target| = 0.003433, Policy Flips: 544
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 7.312292
+    -> Updated Empirical Survival Value (SV) at new q -2.289791: 0.500671 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=223
+    -> Policy Flip Rates: F1=0.000000, F2=0.446000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 9.602083, |SV - target| = 0.000671, Policy Flips: 223
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = -2.289791
+    -> Updated Empirical Survival Value (SV) at new q 7.312292: 0.496024 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=422
+    -> Policy Flip Rates: F1=0.000000, F2=0.844000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 9.602083, |SV - target| = 0.003976, Policy Flips: 422
+
+--- Alternating Optim Iteration 8/10 ---
+Current q^(k-1) = 7.312292
+    -> Updated Empirical Survival Value (SV) at new q 4.690682: 0.500570 (Target: 0.500000)
+    -> Policy Flip Counts: F1=218, F2=346
+    -> Policy Flip Rates: F1=0.436000, F2=0.692000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 2.621610, |SV - target| = 0.000570, Policy Flips: 564
+
+--- Alternating Optim Iteration 9/10 ---
+Current q^(k-1) = 4.690682
+    -> Updated Empirical Survival Value (SV) at new q 2.940360: 0.502566 (Target: 0.500000)
+    -> Policy Flip Counts: F1=6, F2=334
+    -> Policy Flip Rates: F1=0.012000, F2=0.668000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.750322, |SV - target| = 0.002566, Policy Flips: 340
+
+--- Alternating Optim Iteration 10/10 ---
+Current q^(k-1) = 2.940360
+    -> Updated Empirical Survival Value (SV) at new q 5.379483: 0.496911 (Target: 0.500000)
+    -> Policy Flip Counts: F1=276, F2=488
+    -> Policy Flip Rates: F1=0.552000, F2=0.976000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 2.439123, |SV - target| = 0.003089, Policy Flips: 764
+
+✅ Training Completed! Final optimal q: 5.379483, Estimated SV: 0.496911
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.005319422750537229, 'l2': 2.651221168332049e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.401881
+    -> Updated Empirical Survival Value (SV) at new q 3.242887: 0.503080 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.841006, |SV - target| = 0.003080, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 3.242887
+    -> Updated Empirical Survival Value (SV) at new q 3.242887: 0.503080 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.003080, Policy Flips: 0
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.008685897055431024, 'l2': 1.0431839849481051e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.401881
+    -> Updated Empirical Survival Value (SV) at new q 4.137857: 0.498125 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 3.735976, |SV - target| = 0.001875, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 4.137857
+    -> Updated Empirical Survival Value (SV) at new q 6.315473: 0.500399 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.177616, |SV - target| = 0.000399, Policy Flips: 534
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 6.315473
+    -> Updated Empirical Survival Value (SV) at new q 6.316730: 0.499922 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.001257, |SV - target| = 0.000078, Policy Flips: 65
+✅ AO Converged by epsilon: |0.499922 - 0.500000| <= 0.000100
+   Perf  -> Prox: 5.674315349886 | SRA: 5.674345006950 | Oracle: 4.835282838189
+
+[10/30] MC Repetition Seed: 285072
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.2968974198501212, 'lr': 0.0029469535243795493, 'l2': 0.002201792668528686, 'lambda_reg': 3.7566278252571518e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.35757850315234385, 'lr': 0.00986436693368096, 'l2': 0.0020640352241584397, 'lambda_reg': 9.156360749097478e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.22431751721858684, 'lr': 7.484201515126487e-05, 'l2': 0.0008245174918574973, 'lambda_reg': 7.333858477930049e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.13569213517916134, 'lr': 0.00131048700401719, 'l2': 0.0005296052113404976, 'lambda_reg': 2.158518928906477e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.18559475472190365, 'lr': 1.7088141113906343e-05, 'l2': 0.0003672659847706518, 'lambda_reg': 3.091682167854634e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.1561422549479039, 'lr': 0.004045684639377631, 'l2': 0.00017427011756278245, 'lambda_reg': 4.181325428647745e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.36299400878000826, 'lr': 0.00293318345986268, 'l2': 0.008961163837016018, 'lambda_reg': 7.059399361568726e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.17318729208046948, 'lr': 0.00878552555043401, 'l2': 0.00681264892948509, 'lambda_reg': 0.0001753035051780112, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 2.7299, Max: 8.7650
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 4.3305470238304106e-05, 'l2': 8.995890186663946e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.188578
+    -> Updated Empirical Survival Value (SV) at new q -1.583230: 0.491482 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.394652, |SV - target| = 0.008518, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = -1.583230
+    -> Updated Empirical Survival Value (SV) at new q 3.026425: 0.496534 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=381
+    -> Policy Flip Rates: F1=0.000000, F2=0.762000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 4.609655, |SV - target| = 0.003466, Policy Flips: 381
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 3.026425
+    -> Updated Empirical Survival Value (SV) at new q 0.871317: 0.500805 (Target: 0.500000)
+    -> Policy Flip Counts: F1=397, F2=350
+    -> Policy Flip Rates: F1=0.794000, F2=0.700000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 2.155108, |SV - target| = 0.000805, Policy Flips: 747
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 0.871317
+    -> Updated Empirical Survival Value (SV) at new q 6.532112: 0.500705 (Target: 0.500000)
+    -> Policy Flip Counts: F1=469, F2=190
+    -> Policy Flip Rates: F1=0.938000, F2=0.380000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 5.660795, |SV - target| = 0.000705, Policy Flips: 659
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 6.532112
+    -> Updated Empirical Survival Value (SV) at new q 1.773720: 0.502455 (Target: 0.500000)
+    -> Policy Flip Counts: F1=134, F2=102
+    -> Policy Flip Rates: F1=0.268000, F2=0.204000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 4.758392, |SV - target| = 0.002455, Policy Flips: 236
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 1.773720
+    -> Updated Empirical Survival Value (SV) at new q 1.826238: 0.506444 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=273
+    -> Policy Flip Rates: F1=1.000000, F2=0.546000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.052517, |SV - target| = 0.006444, Policy Flips: 773
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = 1.826238
+    -> Updated Empirical Survival Value (SV) at new q 3.635306: 0.502234 (Target: 0.500000)
+    -> Policy Flip Counts: F1=243, F2=101
+    -> Policy Flip Rates: F1=0.486000, F2=0.202000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.809068, |SV - target| = 0.002234, Policy Flips: 344
+
+--- Alternating Optim Iteration 8/10 ---
+Current q^(k-1) = 3.635306
+    -> Updated Empirical Survival Value (SV) at new q 5.638703: 0.499825 (Target: 0.500000)
+    -> Policy Flip Counts: F1=243, F2=14
+    -> Policy Flip Rates: F1=0.486000, F2=0.028000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 2.003397, |SV - target| = 0.000175, Policy Flips: 257
+
+--- Alternating Optim Iteration 9/10 ---
+Current q^(k-1) = 5.638703
+    -> Updated Empirical Survival Value (SV) at new q 1.885224: 0.502610 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=313
+    -> Policy Flip Rates: F1=0.000000, F2=0.626000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 3.753480, |SV - target| = 0.002610, Policy Flips: 313
+
+--- Alternating Optim Iteration 10/10 ---
+Current q^(k-1) = 1.885224
+    -> Updated Empirical Survival Value (SV) at new q 2.552699: 0.500264 (Target: 0.500000)
+    -> Policy Flip Counts: F1=485, F2=127
+    -> Policy Flip Rates: F1=0.970000, F2=0.254000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.667476, |SV - target| = 0.000264, Policy Flips: 612
+
+✅ Training Completed! Final optimal q: 2.552699, Estimated SV: 0.500264
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.0009911681679082532, 'l2': 2.219340547732439e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.188578
+    -> Updated Empirical Survival Value (SV) at new q 1.127094: 0.498327 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.315672, |SV - target| = 0.001673, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 1.127094
+    -> Updated Empirical Survival Value (SV) at new q 1.706209: 0.494869 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.579115, |SV - target| = 0.005131, Policy Flips: 583
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 1.706209
+    -> Updated Empirical Survival Value (SV) at new q 4.485917: 0.497440 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.779708, |SV - target| = 0.002560, Policy Flips: 590
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 4.485917
+    -> Updated Empirical Survival Value (SV) at new q 4.485917: 0.497440 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.002560, Policy Flips: 233
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.008578232674252421, 'l2': 1.0197811125689752e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.188578
+    -> Updated Empirical Survival Value (SV) at new q 5.460497: 0.501798 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.649075, |SV - target| = 0.001798, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.460497
+    -> Updated Empirical Survival Value (SV) at new q 5.476015: 0.502296 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.015518, |SV - target| = 0.002296, Policy Flips: 123
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.476015
+    -> Updated Empirical Survival Value (SV) at new q 5.476015: 0.502296 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.002296, Policy Flips: 0
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: -3.176367834627 | SRA: 5.697510508860 | Oracle: 5.697240987191
+
+[11/30] MC Repetition Seed: 285073
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.497729856690762, 'lr': 0.0010278418986697075, 'l2': 0.00010064564531309412, 'lambda_reg': 5.562557394866776e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 2, 'dropout_prob': 0.37926726910539893, 'lr': 0.0019168822530316227, 'l2': 0.00019482300028839515, 'lambda_reg': 1.0449276241928243e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.21358232231685187, 'lr': 0.006956400297835193, 'l2': 0.0006277377458796498, 'lambda_reg': 0.00022111687494643127, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.485231360234002, 'lr': 0.00010264810521591362, 'l2': 0.0004813791620941929, 'lambda_reg': 1.1260312539971254e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 2, 'dropout_prob': 0.4978840664766019, 'lr': 0.00016876120320521466, 'l2': 0.00021109174472920834, 'lambda_reg': 1.7803639498927743e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.21292779069706488, 'lr': 0.0008348882281796413, 'l2': 0.004169928904255958, 'lambda_reg': 1.1369742631916603e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.11452317539677251, 'lr': 0.0001302405492016149, 'l2': 0.00821357288635146, 'lambda_reg': 0.0017333012539708505, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.21669507132004373, 'lr': 0.009585788315320238, 'l2': 0.0003238203259831304, 'lambda_reg': 0.00010526109016268139, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 3.7713, Max: 8.6842
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 0.0005364184800443015, 'l2': 2.0571322949861023e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.113204
+    -> Updated Empirical Survival Value (SV) at new q 5.575600: 0.494980 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.462396, |SV - target| = 0.005020, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.575600
+    -> Updated Empirical Survival Value (SV) at new q 4.594387: 0.503660 (Target: 0.500000)
+    -> Policy Flip Counts: F1=25, F2=157
+    -> Policy Flip Rates: F1=0.050000, F2=0.314000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.981213, |SV - target| = 0.003660, Policy Flips: 182
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 4.594387
+    -> Updated Empirical Survival Value (SV) at new q 4.889819: 0.503279 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=164
+    -> Policy Flip Rates: F1=0.000000, F2=0.328000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.295433, |SV - target| = 0.003279, Policy Flips: 164
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 4.889819
+    -> Updated Empirical Survival Value (SV) at new q 4.889819: 0.503279 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=0
+    -> Policy Flip Rates: F1=0.000000, F2=0.000000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.003279, Policy Flips: 0
+✅ AO Converged by delta_n threshold (q settled): shifted 0.000000 <= 0.000100
+
+✅ Training Completed! Final optimal q: 4.889819, Estimated SV: 0.503279
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.008404358424471705, 'l2': 8.932915221459131e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.113204
+    -> Updated Empirical Survival Value (SV) at new q 5.145558: 0.498689 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.032354, |SV - target| = 0.001311, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.145558
+    -> Updated Empirical Survival Value (SV) at new q 5.145558: 0.498689 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.001311, Policy Flips: 1
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.008404358424471705, 'l2': 8.932915221459131e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.113204
+    -> Updated Empirical Survival Value (SV) at new q 6.936520: 0.499984 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 6.823316, |SV - target| = 0.000016, Policy Flips: 0
+✅ AO Converged by epsilon: |0.499984 - 0.500000| <= 0.000100
+   Perf  -> Prox: 4.757217055546 | SRA: 5.707888687861 | Oracle: 5.707888687861
+
+[12/30] MC Repetition Seed: 285074
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.12708293999036294, 'lr': 9.303440393701776e-05, 'l2': 0.00019127882544034674, 'lambda_reg': 6.118405159320381e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.3492297449964166, 'lr': 2.7229979944085875e-05, 'l2': 0.0002501432934686627, 'lambda_reg': 7.0569532729299095e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 2, 'dropout_prob': 0.12638078441854417, 'lr': 5.7448124158254285e-05, 'l2': 0.00012809562692413915, 'lambda_reg': 1.0276006169916426e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.48924189897580794, 'lr': 0.0012312187176952189, 'l2': 0.0010764744696898079, 'lambda_reg': 3.793024326770097e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.3878177305460301, 'lr': 0.0007161297917048946, 'l2': 0.001909424560828015, 'lambda_reg': 7.749630599789508e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.22758414639690377, 'lr': 2.0538889109003214e-05, 'l2': 0.0004406776895482073, 'lambda_reg': 0.0035574521051893403, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.15948144063570427, 'lr': 6.830124323414174e-05, 'l2': 0.0040490856636359734, 'lambda_reg': 1.6520352154882639e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.13789044956372046, 'lr': 1.0352896649360456e-05, 'l2': 0.000362940119602154, 'lambda_reg': 0.00021526148899322567, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 2.3135, Max: 8.0003
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 0.0009167139805154324, 'l2': 6.081347588742814e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.013913
+    -> Updated Empirical Survival Value (SV) at new q 7.603671: 0.493569 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 7.617585, |SV - target| = 0.006431, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 7.603671
+    -> Updated Empirical Survival Value (SV) at new q 8.184033: 0.494838 (Target: 0.500000)
+    -> Policy Flip Counts: F1=151, F2=27
+    -> Policy Flip Rates: F1=0.302000, F2=0.054000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.580362, |SV - target| = 0.005162, Policy Flips: 178
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 8.184033
+    -> Updated Empirical Survival Value (SV) at new q 7.999117: 0.500775 (Target: 0.500000)
+    -> Policy Flip Counts: F1=5, F2=12
+    -> Policy Flip Rates: F1=0.010000, F2=0.024000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.184916, |SV - target| = 0.000775, Policy Flips: 17
+✅ AO Converged by micro flip: Policies almost unchanged from last iteration.
+
+✅ Training Completed! Final optimal q: 7.999117, Estimated SV: 0.500775
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.0028751293867004817, 'l2': 1.451068058049966e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.013913
+    -> Updated Empirical Survival Value (SV) at new q 6.166397: 0.494563 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 6.180310, |SV - target| = 0.005437, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 6.166397
+    -> Updated Empirical Survival Value (SV) at new q 6.166397: 0.502873 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.002873, Policy Flips: 23
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.0013327913964208925, 'l2': 9.310170084833533e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.013913
+    -> Updated Empirical Survival Value (SV) at new q 6.031931: 0.497788 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 6.045844, |SV - target| = 0.002212, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 6.031931
+    -> Updated Empirical Survival Value (SV) at new q 5.088348: 0.496306 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.943583, |SV - target| = 0.003694, Policy Flips: 273
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.088348
+    -> Updated Empirical Survival Value (SV) at new q 6.180620: 0.503062 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.092271, |SV - target| = 0.003062, Policy Flips: 496
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 6.180620
+    -> Updated Empirical Survival Value (SV) at new q 5.088348: 0.496456 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.092271, |SV - target| = 0.003544, Policy Flips: 497
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 5.088348
+    -> Updated Empirical Survival Value (SV) at new q 4.958985: 0.500172 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.129363, |SV - target| = 0.000172, Policy Flips: 239
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 4.958985
+    -> Updated Empirical Survival Value (SV) at new q 4.958985: 0.500172 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.000172, Policy Flips: 230
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: 5.687055192062 | SRA: 4.724413485694 | Oracle: 5.688593806737
+
+[13/30] MC Repetition Seed: 285075
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.46906390192318054, 'lr': 0.008499720715745061, 'l2': 0.0023445789774834414, 'lambda_reg': 6.047127880078144e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.10593458604797884, 'lr': 0.000261162025274629, 'l2': 0.004326110875925778, 'lambda_reg': 6.983628163297359e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.24213940459992933, 'lr': 0.004355029640768539, 'l2': 0.0005380094070680568, 'lambda_reg': 1.4360514693175032e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.1694332798386604, 'lr': 0.000571076766098338, 'l2': 0.0006146467925961992, 'lambda_reg': 0.003821237680199732, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.4884526472426405, 'lr': 0.0014635215708148227, 'l2': 0.0002141244266095815, 'lambda_reg': 2.9373214126371824e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.16118441056516214, 'lr': 0.002956868946244684, 'l2': 0.0004914103701007062, 'lambda_reg': 0.0001707248236487358, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 3, 'dropout_prob': 0.33043535603836516, 'lr': 0.00023245242019988434, 'l2': 0.002045271927514803, 'lambda_reg': 0.0001446312792849656, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.33963794035695916, 'lr': 0.008295447390972153, 'l2': 0.00409369957062687, 'lambda_reg': 1.6448773656684542e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 4.3564, Max: 8.1490
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 0.0009123015745364906, 'l2': 3.0560901777193493e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.068446
+    -> Updated Empirical Survival Value (SV) at new q 5.593998: 0.504149 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.662444, |SV - target| = 0.004149, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.593998
+    -> Updated Empirical Survival Value (SV) at new q 4.667907: 0.502491 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=77
+    -> Policy Flip Rates: F1=1.000000, F2=0.154000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.926091, |SV - target| = 0.002491, Policy Flips: 577
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 4.667907
+    -> Updated Empirical Survival Value (SV) at new q 4.667907: 0.505639 (Target: 0.500000)
+    -> Policy Flip Counts: F1=74, F2=72
+    -> Policy Flip Rates: F1=0.148000, F2=0.144000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.005639, Policy Flips: 146
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 4.667907
+    -> Updated Empirical Survival Value (SV) at new q 4.667907: 0.500578 (Target: 0.500000)
+    -> Policy Flip Counts: F1=74, F2=238
+    -> Policy Flip Rates: F1=0.148000, F2=0.476000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.000578, Policy Flips: 312
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 4.667907
+    -> Updated Empirical Survival Value (SV) at new q 5.593998: 0.504149 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=500
+    -> Policy Flip Rates: F1=1.000000, F2=1.000000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.926091, |SV - target| = 0.004149, Policy Flips: 1000
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 5.593998
+    -> Updated Empirical Survival Value (SV) at new q 5.593998: 0.504149 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=245
+    -> Policy Flip Rates: F1=0.000000, F2=0.490000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.004149, Policy Flips: 245
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = 5.593998
+    -> Updated Empirical Survival Value (SV) at new q 5.825815: 0.503748 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=135
+    -> Policy Flip Rates: F1=0.000000, F2=0.270000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.231817, |SV - target| = 0.003748, Policy Flips: 135
+
+--- Alternating Optim Iteration 8/10 ---
+Current q^(k-1) = 5.825815
+    -> Updated Empirical Survival Value (SV) at new q 4.667907: 0.500578 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=153
+    -> Policy Flip Rates: F1=1.000000, F2=0.306000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.157908, |SV - target| = 0.000578, Policy Flips: 653
+
+--- Alternating Optim Iteration 9/10 ---
+Current q^(k-1) = 4.667907
+    -> Updated Empirical Survival Value (SV) at new q 5.593998: 0.504149 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=28
+    -> Policy Flip Rates: F1=1.000000, F2=0.056000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.926091, |SV - target| = 0.004149, Policy Flips: 528
+
+--- Alternating Optim Iteration 10/10 ---
+Current q^(k-1) = 5.593998
+    -> Updated Empirical Survival Value (SV) at new q 5.909146: 0.502646 (Target: 0.500000)
+    -> Policy Flip Counts: F1=159, F2=113
+    -> Policy Flip Rates: F1=0.318000, F2=0.226000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.315148, |SV - target| = 0.002646, Policy Flips: 272
+
+✅ Training Completed! Final optimal q: 5.909146, Estimated SV: 0.502646
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.007694878546472765, 'l2': 4.532380165196882e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.068446
+    -> Updated Empirical Survival Value (SV) at new q 5.334980: 0.498780 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.403426, |SV - target| = 0.001220, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.334980
+    -> Updated Empirical Survival Value (SV) at new q 5.334980: 0.498780 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.001220, Policy Flips: 7
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.00655369777892031, 'l2': 1.746382243385703e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.068446
+    -> Updated Empirical Survival Value (SV) at new q 5.058205: 0.497513 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.126651, |SV - target| = 0.002487, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.058205
+    -> Updated Empirical Survival Value (SV) at new q 4.999517: 0.503149 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.058688, |SV - target| = 0.003149, Policy Flips: 33
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 4.999517
+    -> Updated Empirical Survival Value (SV) at new q 5.058205: 0.497513 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.058688, |SV - target| = 0.002487, Policy Flips: 39
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 5.058205
+    -> Updated Empirical Survival Value (SV) at new q 5.300108: 0.499496 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.241902, |SV - target| = 0.000504, Policy Flips: 503
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 5.300108
+    -> Updated Empirical Survival Value (SV) at new q 4.966136: 0.498420 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.333972, |SV - target| = 0.001580, Policy Flips: 4
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 4.966136
+    -> Updated Empirical Survival Value (SV) at new q 4.999517: 0.503804 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.033381, |SV - target| = 0.003804, Policy Flips: 468
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = 4.999517
+    -> Updated Empirical Survival Value (SV) at new q 5.058205: 0.497513 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.058688, |SV - target| = 0.002487, Policy Flips: 33
+
+--- Alternating Optim Iteration 8/10 ---
+Current q^(k-1) = 5.058205
+    -> Updated Empirical Survival Value (SV) at new q 5.058205: 0.497513 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.002487, Policy Flips: 58
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: 3.848837462004 | SRA: 4.764136937943 | Oracle: 4.764251680669
+
+[14/30] MC Repetition Seed: 285076
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.2801843795561951, 'lr': 0.009125218596835948, 'l2': 0.002660148651751093, 'lambda_reg': 1.5523291597036057e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.3283293189382399, 'lr': 0.001823278617873754, 'l2': 0.0002349418877476766, 'lambda_reg': 1.394074643360705e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.3162142499619552, 'lr': 0.0002307687829071335, 'l2': 0.002919924598993911, 'lambda_reg': 1.9941786370205666e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.3842412150740073, 'lr': 0.006389806689038336, 'l2': 0.0004730006881254502, 'lambda_reg': 0.00015495311791225837, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.24151577950169992, 'lr': 0.009998885721385806, 'l2': 0.009058000924901524, 'lambda_reg': 0.00013313148142665856, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.4955001059383872, 'lr': 0.00023540869393569072, 'l2': 0.0015791599370532474, 'lambda_reg': 2.036073823217718e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.2774596717284269, 'lr': 2.5918752787552093e-05, 'l2': 0.0005899357293234375, 'lambda_reg': 4.984522440792623e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.22213873326677389, 'lr': 0.0006148894475946154, 'l2': 0.002926741954439287, 'lambda_reg': 1.1893603256846662e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 4.0378, Max: 8.9102
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 1.5327212226953873e-05, 'l2': 2.6232577858770645e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.216125
+    -> Updated Empirical Survival Value (SV) at new q 2.775190: 0.493783 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.991315, |SV - target| = 0.006217, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 2.775190
+    -> Updated Empirical Survival Value (SV) at new q 6.917933: 0.503790 (Target: 0.500000)
+    -> Policy Flip Counts: F1=255, F2=220
+    -> Policy Flip Rates: F1=0.510000, F2=0.440000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 4.142743, |SV - target| = 0.003790, Policy Flips: 475
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 6.917933
+    -> Updated Empirical Survival Value (SV) at new q 3.825702: 0.501413 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=307
+    -> Policy Flip Rates: F1=1.000000, F2=0.614000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 3.092231, |SV - target| = 0.001413, Policy Flips: 807
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 3.825702
+    -> Updated Empirical Survival Value (SV) at new q 5.789386: 0.497520 (Target: 0.500000)
+    -> Policy Flip Counts: F1=49, F2=111
+    -> Policy Flip Rates: F1=0.098000, F2=0.222000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.963685, |SV - target| = 0.002480, Policy Flips: 160
+
+--- Alternating Optim Iteration 5/10 ---
+Current q^(k-1) = 5.789386
+    -> Updated Empirical Survival Value (SV) at new q 6.878627: 0.498185 (Target: 0.500000)
+    -> Policy Flip Counts: F1=451, F2=221
+    -> Policy Flip Rates: F1=0.902000, F2=0.442000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 1.089240, |SV - target| = 0.001815, Policy Flips: 672
+
+--- Alternating Optim Iteration 6/10 ---
+Current q^(k-1) = 6.878627
+    -> Updated Empirical Survival Value (SV) at new q 3.262438: 0.498234 (Target: 0.500000)
+    -> Policy Flip Counts: F1=158, F2=206
+    -> Policy Flip Rates: F1=0.316000, F2=0.412000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 3.616189, |SV - target| = 0.001766, Policy Flips: 364
+
+--- Alternating Optim Iteration 7/10 ---
+Current q^(k-1) = 3.262438
+    -> Updated Empirical Survival Value (SV) at new q 5.353236: 0.495872 (Target: 0.500000)
+    -> Policy Flip Counts: F1=158, F2=267
+    -> Policy Flip Rates: F1=0.316000, F2=0.534000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 2.090798, |SV - target| = 0.004128, Policy Flips: 425
+
+--- Alternating Optim Iteration 8/10 ---
+Current q^(k-1) = 5.353236
+    -> Updated Empirical Survival Value (SV) at new q 0.219313: 0.499909 (Target: 0.500000)
+    -> Policy Flip Counts: F1=500, F2=299
+    -> Policy Flip Rates: F1=1.000000, F2=0.598000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 5.133924, |SV - target| = 0.000091, Policy Flips: 799
+
+--- Alternating Optim Iteration 9/10 ---
+Current q^(k-1) = 0.219313
+    -> Updated Empirical Survival Value (SV) at new q -2.729582: 0.502587 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=473
+    -> Policy Flip Rates: F1=0.000000, F2=0.946000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 2.948895, |SV - target| = 0.002587, Policy Flips: 473
+
+--- Alternating Optim Iteration 10/10 ---
+Current q^(k-1) = -2.729582
+    -> Updated Empirical Survival Value (SV) at new q -3.080477: 0.507976 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=176
+    -> Policy Flip Rates: F1=0.000000, F2=0.352000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.350895, |SV - target| = 0.007976, Policy Flips: 176
+
+✅ Training Completed! Final optimal q: -3.080477, Estimated SV: 0.507976
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.0057260260611451015, 'l2': 1.0178353516035886e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.216125
+    -> Updated Empirical Survival Value (SV) at new q 4.705227: 0.496590 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.921352, |SV - target| = 0.003410, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 4.705227
+    -> Updated Empirical Survival Value (SV) at new q 5.772818: 0.496329 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.067591, |SV - target| = 0.003671, Policy Flips: 468
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.772818
+    -> Updated Empirical Survival Value (SV) at new q 5.772818: 0.496329 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.003671, Policy Flips: 0
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.0010098568481397396, 'l2': 6.656638261104149e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.216125
+    -> Updated Empirical Survival Value (SV) at new q 5.092727: 0.503424 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 5.308853, |SV - target| = 0.003424, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 5.092727
+    -> Updated Empirical Survival Value (SV) at new q 5.166506: 0.503029 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.073779, |SV - target| = 0.003029, Policy Flips: 574
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 5.166506
+    -> Updated Empirical Survival Value (SV) at new q 6.228377: 0.497476 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 1.061871, |SV - target| = 0.002524, Policy Flips: 733
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 6.228377
+    -> Updated Empirical Survival Value (SV) at new q 6.228377: 0.497476 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.002524, Policy Flips: 35
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+   Perf  -> Prox: -3.555533279781 | SRA: 4.757289579715 | Oracle: 5.722642714278
+
+[15/30] MC Repetition Seed: 285077
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.26100813273164825, 'lr': 0.0019351081818809067, 'l2': 0.00015215266653195936, 'lambda_reg': 2.2045726811260885e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.2967509909465341, 'lr': 4.0949030945699423e-05, 'l2': 0.005988895524056118, 'lambda_reg': 3.3087298482884313e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.4822992425972626, 'lr': 0.00915798717263747, 'l2': 0.0027064235563930257, 'lambda_reg': 0.009897588341390401, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.2227601734693772, 'lr': 0.002525966967337529, 'l2': 0.0005532019745767711, 'lambda_reg': 0.00042954668720998347, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.231556135324264, 'lr': 3.5908370784339886e-05, 'l2': 0.00012162407070449625, 'lambda_reg': 3.0904431800257752e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.26763264592497693, 'lr': 0.00402215522586885, 'l2': 0.0012328834979742798, 'lambda_reg': 0.0009036678753533948, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 128, 'network_depth': 4, 'dropout_prob': 0.3118130449642479, 'lr': 0.00955780975871388, 'l2': 0.00021236900954120736, 'lambda_reg': 4.1775014908314545e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 2, 'dropout_prob': 0.472201437344733, 'lr': 0.0007623955655828787, 'l2': 0.0001420575238811646, 'lambda_reg': 8.53181291570973e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 2.9846, Max: 8.6698
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 0.0005723306999137089, 'l2': 9.026948624332053e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.236376
+    -> Updated Empirical Survival Value (SV) at new q 2.689235: 0.500450 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 2.452858, |SV - target| = 0.000450, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 2.689235
+    -> Updated Empirical Survival Value (SV) at new q 6.270134: 0.496589 (Target: 0.500000)
+    -> Policy Flip Counts: F1=84, F2=105
+    -> Policy Flip Rates: F1=0.168000, F2=0.210000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 3.580899, |SV - target| = 0.003411, Policy Flips: 189
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 6.270134
+    -> Updated Empirical Survival Value (SV) at new q 6.270134: 0.496734 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=84
+    -> Policy Flip Rates: F1=0.000000, F2=0.168000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.003266, Policy Flips: 84
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 6.270134
+    -> Updated Empirical Survival Value (SV) at new q 6.270134: 0.496729 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=32
+    -> Policy Flip Rates: F1=0.000000, F2=0.064000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.003271, Policy Flips: 32
+✅ AO Converged by delta_n threshold (q settled): shifted 0.000000 <= 0.000100
+
+✅ Training Completed! Final optimal q: 6.270134, Estimated SV: 0.496729
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.009176651578300762, 'l2': 3.2521482315426095e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.236376
+    -> Updated Empirical Survival Value (SV) at new q 4.711765: 0.496533 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.475389, |SV - target| = 0.003467, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 4.711765
+    -> Updated Empirical Survival Value (SV) at new q 4.711765: 0.496533 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.003467, Policy Flips: 7
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---
+Optimal configs locked: {'lr': 0.009487674603616153, 'l2': 5.8615381342956214e-08, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = 0.236376
+    -> Updated Empirical Survival Value (SV) at new q 5.051305: 0.500099 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.814929, |SV - target| = 0.000099, Policy Flips: 0
+✅ AO Converged by epsilon: |0.500099 - 0.500000| <= 0.000100
+   Perf  -> Prox: 5.732258105473 | SRA: 4.760893058328 | Oracle: 4.760893058328
+
+[16/30] MC Repetition Seed: 285078
+  -> Training Proximal QTR (Always Cross-Fitting)
+
+==================================================
+🚀 Starting Proximal QTR Policy Learning (S1)
+=== Configuration & Data Generation ===
+Generated data: Train(500), Val(125)
+
+=== Step 1: Pre-estimating Bridge Functions (q22) w/ Cross-Fitting ===
+
+>> Cross-Fitting Fold 1/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 3, 'dropout_prob': 0.25696758934268293, 'lr': 0.006750710909194227, 'l2': 0.00011083517054167351, 'lambda_reg': 1.551417197509773e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.19187225079913084, 'lr': 0.004683004186378915, 'l2': 0.004394729993042332, 'lambda_reg': 3.0524123705942995e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.2542387750802294, 'lr': 0.0005809776548541032, 'l2': 0.0027153915822785172, 'lambda_reg': 2.3852681495267067e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 4, 'dropout_prob': 0.4967056827267967, 'lr': 0.0022453159390424205, 'l2': 0.0007080898348383705, 'lambda_reg': 0.0023386622743972628, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+
+>> Cross-Fitting Fold 2/2
+Starting Hyperparameter Optimization for a1=1, a2=1...
+Best Params found: {'network_width': 64, 'network_depth': 2, 'dropout_prob': 0.25267604247268993, 'lr': 0.0031625634282715556, 'l2': 0.00034195284489770266, 'lambda_reg': 3.052945673474745e-05, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 3, 'dropout_prob': 0.22306908629927352, 'lr': 1.8494150013001698e-05, 'l2': 0.0003855753438782825, 'lambda_reg': 0.00030424761347869656, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=1...
+Best Params found: {'network_width': 32, 'network_depth': 4, 'dropout_prob': 0.28125548055300376, 'lr': 0.00010510992686631402, 'l2': 0.0002353880797203102, 'lambda_reg': 0.00023038998699009022, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Starting Hyperparameter Optimization for a1=-1, a2=-1...
+Best Params found: {'network_width': 64, 'network_depth': 2, 'dropout_prob': 0.16131629787255247, 'lr': 3.569430111688094e-05, 'l2': 0.0011993631584997712, 'lambda_reg': 4.856631941365702e-06, 'q22_output_bound': 10.0, 'epochs': 200}
+Training Final q11 Checkpoint...
+Training Final q22 Checkpoint...
+Weight summary before inner optimization -> Train mean: 2.7477, Max: 8.3299
+
+=== Step 2 & 3: Alternating Optimization for Policy Learning ===
+Alternating Optim Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+                           -> flip_rate_thresh: 0.1000, batch_size: 128
+
+--- Running Initial Hyperparameter Optimization for Policy Networks ---
+Optimal configs locked: {'lr': 0.0009359133180413112, 'l2': 9.917982041554634e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.131143
+    -> Updated Empirical Survival Value (SV) at new q 6.951541: 0.491652 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 7.082684, |SV - target| = 0.008348, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 6.951541
+    -> Updated Empirical Survival Value (SV) at new q 7.072968: 0.498667 (Target: 0.500000)
+    -> Policy Flip Counts: F1=478, F2=165
+    -> Policy Flip Rates: F1=0.956000, F2=0.330000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.121427, |SV - target| = 0.001333, Policy Flips: 643
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 7.072968
+    -> Updated Empirical Survival Value (SV) at new q 7.864583: 0.493181 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=140
+    -> Policy Flip Rates: F1=0.000000, F2=0.280000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.791614, |SV - target| = 0.006819, Policy Flips: 140
+
+--- Alternating Optim Iteration 4/10 ---
+Current q^(k-1) = 7.864583
+    -> Updated Empirical Survival Value (SV) at new q 7.864583: 0.491187 (Target: 0.500000)
+    -> Policy Flip Counts: F1=0, F2=6
+    -> Policy Flip Rates: F1=0.000000, F2=0.012000 (thresh=0.1000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.008813, Policy Flips: 6
+✅ AO Converged by delta_n threshold (q settled): shifted 0.000000 <= 0.000100
+
+✅ Training Completed! Final optimal q: 7.864583, Estimated SV: 0.491187
+  -> Training SRA Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting SRA Policy Learning (NO-CF MODE, S1)
+
+=== SRA Step 1: Estimating Propensity Weights (Logistic Regression) - NO CF ===
+Training SRA Propensity Models (Logistic Regression)...
+
+=== SRA Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---
+Optimal configs locked: {'lr': 0.006328770854593928, 'l2': 3.0082045136413926e-07, 'epochs': 200}
+
+--- Alternating Optim Iteration 1/10 ---
+Current q^(k-1) = -0.131143
+    -> Updated Empirical Survival Value (SV) at new q 3.918697: 0.498984 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 4.049840, |SV - target| = 0.001016, Policy Flips: 0
+
+--- Alternating Optim Iteration 2/10 ---
+Current q^(k-1) = 3.918697
+    -> Updated Empirical Survival Value (SV) at new q 3.135245: 0.502258 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.783452, |SV - target| = 0.002258, Policy Flips: 628
+
+--- Alternating Optim Iteration 3/10 ---
+Current q^(k-1) = 3.135245
+    -> Updated Empirical Survival Value (SV) at new q 3.135245: 0.497438 (Target: 0.500000)
+    -> Convergence checks: |q_new - q_current| = 0.000000, |SV - target| = 0.002562, Policy Flips: 4
+✅ AO Converged by delta_n threshold (q settled): shifed 0.000000 <= 0.000100
+  -> Training Oracle Estimator (No-CF: True)...
+
+==================================================
+🚀 Starting Oracle Policy Learning (NO-CF MODE, S1)
+
+=== Oracle Step 1: Estimating Propensity Weights (Oracle Features) - NO CF ===
+Training Oracle Propensity Models (Logistic Regression - DGPSatisfied)...
+
+=== Oracle Step 2 & 3: Alternating Optimization (Binary Search Version) ===
+AO Settings -> Grid size: 500, epsilon_n: 0.000100, delta_n: 0.000100, hn: 0.032182
+
+--- Running Initial Hyperparameter Optimization for Policy Networks (Oracle NO-CF AO) ---

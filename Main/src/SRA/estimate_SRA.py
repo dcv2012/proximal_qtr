@@ -81,7 +81,7 @@ def train_policy_SRA(n_train=2000, seed=20026, K_folds=2, max_alt_iters=30, tau=
         
         q_initial = (l_bound + u_bound) / 2.0
         print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (SRA SCL) ---")
-        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_initial, n_trials=10, phi_type=phi_type, model_type=model_type)
+        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_initial, n_trials=15, phi_type=phi_type, model_type=model_type)
         
         for it in range(max_alt_iters):
             q_current = (l_bound + u_bound) / 2.0
@@ -130,7 +130,7 @@ def train_policy_SRA(n_train=2000, seed=20026, K_folds=2, max_alt_iters=30, tau=
         last_sign_f2 = None
         
         print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (SRA AO) ---")
-        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
+        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=15, phi_type=phi_type, model_type=model_type)
         print(f"Optimal configs locked: {best_p}")
         
         for it in range(max_alt_iters):
@@ -245,7 +245,7 @@ def train_policy_SRA_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=0.5, 
         
         q_initial = (l_bound + u_bound) / 2.0
         print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF SCL) ---")
-        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_initial, n_trials=10, phi_type=phi_type, model_type=model_type)
+        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_initial, n_trials=15, phi_type=phi_type, model_type=model_type)
         
         for it in range(max_alt_iters):
             q_current = (l_bound + u_bound) / 2.0
@@ -293,7 +293,7 @@ def train_policy_SRA_no_cf(n_train=2000, seed=20026, max_alt_iters=30, tau=0.5, 
         last_sign_f2 = None
         
         print(f"\n--- Running Initial Hyperparameter Optimization for Policy Networks (SRA NO-CF AO) ---")
-        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=10, phi_type=phi_type, model_type=model_type)
+        best_p = optimize_outer_hyperparams(df_train, ipw_train_oof, df_val, ipw_val_preds, q_current, n_trials=15, phi_type=phi_type, model_type=model_type)
         print(f"Optimal configs locked: {best_p}")
         
         for it in range(max_alt_iters):

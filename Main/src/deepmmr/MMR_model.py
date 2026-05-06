@@ -44,7 +44,7 @@ class MLP_for_MMR(nn.Module):
         if self.output_bound is not None:
             c = float(self.output_bound)
             if c != 0.0:
-                x = c * torch.nn.functional.tanh(x)
+                x = c * torch.nn.functional.softsign(x)
             # c == 0：约定为线性输出（不做 tanh 有界化），见 report 5.4
             
         # x = torch.nn.functional.softplus(x)

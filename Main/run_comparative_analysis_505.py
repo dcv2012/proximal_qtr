@@ -16,7 +16,7 @@ from Main.src.SRA.estimate_SRA import train_policy_SRA, train_policy_SRA_no_cf
 from Main.src.Oracle.estimate_Oracle import train_policy_Oracle, train_policy_Oracle_no_cf
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-RESULTS_DIRNAME = "comparative_analysis_502"
+RESULTS_DIRNAME = "comparative_analysis_505"
 
 
 def parse_arguments():
@@ -37,6 +37,7 @@ def parse_arguments():
     parser.add_argument("--dgp", type=str, choices=["S1", "S2"], default="S1", help="Outcome scenario with S1-linear, S2-nonlinear")
     parser.add_argument("--optim_mode", type=str, choices=["scl", "ao"], default="ao", help="Optimization framework for SRA/Oracle (scl=Binary Search, ao=Grid Search)")
     parser.add_argument("--no_cf", action="store_true", help="Skip cross-fitting for SRA and Oracle (faster)")
+    parser.add_argument("--prox_only", action="store_true", help="Only run Proximal QTR (skip SRA/Oracle)")
     parser.add_argument("--mmr_loss", type=str, choices=["U_statistic", "V_statistic"], default="V_statistic", help="MMR loss formulation for treatment bridge estimation")
     parser.add_argument("--q22_output_bound", type=float, default=3, help="Symmetric tanh output bound C for q22 bridge estimates")
     
@@ -75,11 +76,10 @@ def run_comparative_mc(args):
     params = origin_para_set
     mc_sample_size = args.mc_eval_size
     
-    results = {
-        "Proximal": {"true_perf": [], "est_error": []},
-        "SRA": {"true_perf": [], "est_error": []},
-        "Oracle": {"true_perf": [], "est_error": []}
-    }
+    results = {"Proximal": {"true_perf": [], "est_error": []}}
+    if not args.prox_only:
+        results["SRA"] = {"true_perf": [], "est_error": []}
+        results["Oracle"] = {"true_perf": [], "est_error": []}
     
     # 提前定义好保存路径并在开始前写入由于随时追踪原始结果的文件头
     res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', RESULTS_DIRNAME)
@@ -121,61 +121,66 @@ def run_comparative_mc(args):
         results["Proximal"]["true_perf"].append(true_perf_p)
         results["Proximal"]["est_error"].append(true_perf_p - q_est_p)
         
-        # === 2. SRA Estimator ===
-        print(f"  -> Training SRA Estimator (No-CF: {args.no_cf})...")
-        if args.no_cf:
-            f1_s, f2_s, q_est_s, _ = train_policy_SRA_no_cf(
-                n_train=args.n_train, seed=current_seed,
-                max_alt_iters=args.max_alt_iters, tau=args.tau, 
-                phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-                dgp=args.dgp, optim_mode=args.optim_mode
-            )
+        if args.prox_only:
+            iter_log = f"   Perf  -> Prox: {results['Proximal']['true_perf'][-1]:.12f}"
+            print(iter_log)
         else:
-            f1_s, f2_s, q_est_s, _ = train_policy_SRA(
-                n_train=args.n_train, seed=current_seed, K_folds=args.k_folds,
-                max_alt_iters=args.max_alt_iters, tau=args.tau, 
-                phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-                dgp=args.dgp, optim_mode=args.optim_mode
+            # === 2. SRA Estimator ===
+            print(f"  -> Training SRA Estimator (No-CF: {args.no_cf})...")
+            if args.no_cf:
+                f1_s, f2_s, q_est_s, _ = train_policy_SRA_no_cf(
+                    n_train=args.n_train, seed=current_seed,
+                    max_alt_iters=args.max_alt_iters, tau=args.tau, 
+                    phi_type=args.phi_type, model_type=args.model_type, save_models=False,
+                    dgp=args.dgp, optim_mode=args.optim_mode
+                )
+            else:
+                f1_s, f2_s, q_est_s, _ = train_policy_SRA(
+                    n_train=args.n_train, seed=current_seed, K_folds=args.k_folds,
+                    max_alt_iters=args.max_alt_iters, tau=args.tau, 
+                    phi_type=args.phi_type, model_type=args.model_type, save_models=False,
+                    dgp=args.dgp, optim_mode=args.optim_mode
+                )
+            df_eval_s = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_s, f2=f2_s, device=device, seed=eval_seed, scenario=args.dgp)
+            true_perf_s = np.quantile(df_eval_s['Y2'], args.tau)
+            results["SRA"]["true_perf"].append(true_perf_s)
+            results["SRA"]["est_error"].append(true_perf_s - q_est_s)
+            
+            # === 3. Oracle Estimator ===
+            print(f"  -> Training Oracle Estimator (No-CF: {args.no_cf})...")
+            if args.no_cf:
+                f1_o, f2_o, q_est_o, _ = train_policy_Oracle_no_cf(
+                    n_train=args.n_train, seed=current_seed,
+                    max_alt_iters=args.max_alt_iters, tau=args.tau, 
+                    phi_type=args.phi_type, model_type=args.model_type, save_models=False,
+                    dgp=args.dgp, optim_mode=args.optim_mode
+                )
+            else:
+                f1_o, f2_o, q_est_o, _ = train_policy_Oracle(
+                    n_train=args.n_train, seed=current_seed, K_folds=args.k_folds,
+                    max_alt_iters=args.max_alt_iters, tau=args.tau, 
+                    phi_type=args.phi_type, model_type=args.model_type, save_models=False,
+                    dgp=args.dgp, optim_mode=args.optim_mode
+                )
+            df_eval_o = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_o, f2=f2_o, device=device, seed=eval_seed, scenario=args.dgp)
+            true_perf_o = np.quantile(df_eval_o['Y2'], args.tau)
+            results["Oracle"]["true_perf"].append(true_perf_o)
+            results["Oracle"]["est_error"].append(true_perf_o - q_est_o)
+            
+            # Debug Report Output for the repetition
+            iter_log = (
+                f"   Perf  -> Prox: {results['Proximal']['true_perf'][-1]:.12f} | "
+                f"SRA: {results['SRA']['true_perf'][-1]:.12f} | "
+                f"Oracle: {results['Oracle']['true_perf'][-1]:.12f}"
             )
-        df_eval_s = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_s, f2=f2_s, device=device, seed=eval_seed, scenario=args.dgp)
-        true_perf_s = np.quantile(df_eval_s['Y2'], args.tau)
-        results["SRA"]["true_perf"].append(true_perf_s)
-        results["SRA"]["est_error"].append(true_perf_s - q_est_s)
-        
-        # === 3. Oracle Estimator ===
-        print(f"  -> Training Oracle Estimator (No-CF: {args.no_cf})...")
-        if args.no_cf:
-            f1_o, f2_o, q_est_o, _ = train_policy_Oracle_no_cf(
-                n_train=args.n_train, seed=current_seed,
-                max_alt_iters=args.max_alt_iters, tau=args.tau, 
-                phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-                dgp=args.dgp, optim_mode=args.optim_mode
-            )
-        else:
-            f1_o, f2_o, q_est_o, _ = train_policy_Oracle(
-                n_train=args.n_train, seed=current_seed, K_folds=args.k_folds,
-                max_alt_iters=args.max_alt_iters, tau=args.tau, 
-                phi_type=args.phi_type, model_type=args.model_type, save_models=False,
-                dgp=args.dgp, optim_mode=args.optim_mode
-            )
-        df_eval_o = dynamic_intervened_data_gen(mc_sample_size, params, f1=f1_o, f2=f2_o, device=device, seed=eval_seed, scenario=args.dgp)
-        true_perf_o = np.quantile(df_eval_o['Y2'], args.tau)
-        results["Oracle"]["true_perf"].append(true_perf_o)
-        results["Oracle"]["est_error"].append(true_perf_o - q_est_o)
-        
-        # Debug Report Output for the repetition
-        iter_log = (
-            f"   Perf  -> Prox: {results['Proximal']['true_perf'][-1]:.12f} | "
-            f"SRA: {results['SRA']['true_perf'][-1]:.12f} | "
-            f"Oracle: {results['Oracle']['true_perf'][-1]:.12f}"
-        )
-        print(iter_log)
+            print(iter_log)
         
         # 每次循环结束后随时将结果追加记录到文件
         with open(save_path, 'a') as f:
             f.write(f"{i+1},Proximal,{results['Proximal']['true_perf'][-1]:.12f},{results['Proximal']['est_error'][-1]:.12f}\n")
-            f.write(f"{i+1},SRA,{results['SRA']['true_perf'][-1]:.12f},{results['SRA']['est_error'][-1]:.12f}\n")
-            f.write(f"{i+1},Oracle,{results['Oracle']['true_perf'][-1]:.12f},{results['Oracle']['est_error'][-1]:.12f}\n")
+            if not args.prox_only:
+                f.write(f"{i+1},SRA,{results['SRA']['true_perf'][-1]:.12f},{results['SRA']['est_error'][-1]:.12f}\n")
+                f.write(f"{i+1},Oracle,{results['Oracle']['true_perf'][-1]:.12f},{results['Oracle']['est_error'][-1]:.12f}\n")
             f.write("\n") # 留一行空格
         
     print(f"\n[Simulation Completed] Execution Time: {(time.time() - st_time)/60:.2f} minutes")
@@ -257,10 +262,8 @@ if __name__ == "__main__":
     # 1. 运行并生成数据记录 (如需重新跑实验请取消注释)
     csv_path = run_comparative_mc(args)
     
-    # 2. 给定的结果储存的路径 （如果进行mc实验，则需要注释掉；仅在实验分析时启用）
+    # 2. 直接分析本次输出
     res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', RESULTS_DIRNAME)
-    fname = f"raw_{args.dgp}_n{args.n_train}_phi{args.phi_type}_{args.model_type}_tau{args.tau}_reps{args.mc_reps}.csv"
-    csv_path = os.path.join(res_dir, fname)
     analyze_results(csv_path, args, res_dir)
     
     

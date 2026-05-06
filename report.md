@@ -241,18 +241,8 @@ S1-NN-PHI3-2000-U/V     31/32
 2. 对比C：nn-phi3-5000-C3/5/6
 3. 对比输出层激活函数：手动修改切换 MMR_model 中输出层激活函数分别为relu、C*sigmoid情况进行测试，使用参数nn-phi3-5000-C4-reps31、32
 
-**5.2 执行记录（2026-05-02，按 exp.md 读取本段后启动）**
-
-- 结果写入：`Main/results/comparative_analysis_502/`（`run_comparative_analysis.py` 中 `RESULTS_DIRNAME`）。
-- **解释器**：tmux 下须使用 `/home/ctl/.conda/envs/DEEPMMR/bin/python`（默认 `python` 可能无 `torch`，首次已全部用上述路径重启）。
-- **入口脚本**：默认执行「MC → 汇总 → 箱线图」；若仅读取已有 CSV 做图表，可加 `--analyze_only`。原始 CSV/boxplot 文件名含 `_C{C}_`，与 `--q22_output_bound` 一致。
-- **q22 输出激活消融**：不设环境变量为默认 `tanh`；设置 `MMR_Q22_OUTPUT_ACT=relu` 或 `MMR_Q22_OUTPUT_ACT=sigmoid`（等价于 `C*sigmoid`，有界至 `[0,C]`）。
-- **tmux 会话名**：`ca502_n500_C4`、`ca502_n2000_C4`、`ca502_n5000_C4`、`ca502_n5000_C3`、`ca502_n5000_C5`、`ca502_n5000_C6`、`ca502_act_relu31`（`MMR_Q22_OUTPUT_ACT=relu`、`mc_reps=31`）、`ca502_act_sig32`（`sigmoid`、32）。
-- **日志**：`Main/results/comparative_analysis_502/logs/<会话名>.log`。若长时间为 0 字节，为管道下 Python 块缓冲所致；如需实时可读可改用 `python -u` 或包一层 `stdbuf -oL` 后重启对应会话。
-- **统一**：`--dgp S1 --no_cf --phi_type 3 --model_type nn --tau 0.5`（默认值未写的即脚本默认）。
 
 **5.2 分析结论（exp.md §2，数据目录 `comparative_analysis_502`）**
-
 - **Prox vs SRA（均值）**：nn、C4 下 n=500 时 Prox 略高（5.137 vs 5.121）；n=2000、n=5000 时 Prox 略低于 SRA（5.150 vs 5.204；5.055 vs 5.149）。n=5000 扫 C 时仅 **C=3** 的 Prox 均值高于 SRA（5.208 vs 5.149），C4/C5/C6 的 Prox 均值均不优于 SRA。
 - **稳定性**：SRA 标准差在各组均明显低于 Prox；n=5000 且 C≥4 时 Prox 出现重尾（例如 C4 baseline 标准差约 0.96，最低轮次约 0.50；C5/C6 更低甚至略负）。**C=3** 时 Prox 标准差约 0.47，为本批 n=5000 中最稳。
 - **输出激活（n=5000, C4）**：**ReLU**（31 rep）Prox 均值约 4.79、标准差约 1.54，明显劣于 tanh baseline；**C×sigmoid**（32 rep）均值约 5.19，与 SRA 几乎持平且方差小于 ReLU。
@@ -269,22 +259,34 @@ S1-NN-PHI3-2000-U/V     31/32
 1. baseline: nn-phi3-C4-n500/2000/5000
 2. 在1的baseline下，改变model：500/2000/5000-linear
 3. 改变C：C3/5/6-2000/5000-nn
-
-**5.3 执行记录（2026-05-03）**
-- 检查到 5.2 会话仍在运行（`ca502_*`），为避免污染，按 `exp.md` 要求新建副本脚本：`Main/run_comparative_analysis_503.py`。
-- 新脚本仅切换结果目录为 `comparative_analysis_503`，其余逻辑与当前主脚本一致；统一使用 `--no_cf`。
-- 启动命令统一使用：`/home/ctl/.conda/envs/DEEPMMR/bin/python -u`，并设置 `CUDA_VISIBLE_DEVICES=1` 与旧任务隔离。
-- 结果目录：`Main/results/comparative_analysis_503/`；日志目录：`Main/results/comparative_analysis_503/logs/`。
-- 已启动 12 个 tmux 会话：
-  `ca503_base_nn_n500_C4`、`ca503_base_nn_n2000_C4`、`ca503_base_nn_n5000_C4`、
-  `ca503_model_lin_n500_C4`、`ca503_model_lin_n2000_C4`、`ca503_model_lin_n5000_C4`、
-  `ca503_C3_nn_n2000`、`ca503_C5_nn_n2000`、`ca503_C6_nn_n2000`、
-  `ca503_C3_nn_n5000`、`ca503_C5_nn_n5000`、`ca503_C6_nn_n5000`。
-
-
+结果：C3,6 best; 5000仍然不稳
 
 5.4
 * 设定C=0为使用线性输出
 * 统一optuna次数for nuisance、outer
 实验：
 1. C0-nn/linear-phi3-n500/2000/5000 6组
+
+
+5.5
+*回调optuna trails：nuisance 20, policy 15
+*tanh换成softsign
+***明确：负值合理，softplus假设更强
+
+实验：
+1. main：对比C3,C6,C10
+C3/C6/C10-nn/linear-n500/2000/5000-30reps
+
+2. 只针对prox方法，深度测试C0
+C0: nn/linear-n1000/3500/10000-50reps
+
+**5.5 执行记录（2026-05-05）**
+
+- 检查到 5.3/5.4 仍有长任务在跑，为避免污染，新建脚本 `Main/run_comparative_analysis_505.py`，结果目录独立为 `Main/results/comparative_analysis_505/`。
+- `MLP_for_MMR` 输出层已切换为 **softsign** 有界化（`c * softsign(x)`），并保留 `C=0` 线性输出约定。
+- `train_policy_prox_qtr_sl` 的 Optuna 次数按 5.5 要求固定为：`nuisance_n_trials=20`、`policy_n_trials=15`。
+- 已启动 24 个 tmux 会话（统一 `--dgp S1 --no_cf --phi_type 3`）：
+  - main comparative（18 组）：`C3/C6/C10 × nn/linear × n500/2000/5000`，会话前缀 `ca505_m_*`；
+  - prox-only（6 组）：`C0 × nn/linear × n1000/3500/10000`（`--prox_only --mc_reps 50`），会话前缀 `ca505_p_*`。
+- 环境：`/home/ctl/.conda/envs/DEEPMMR/bin/python -u`，日志目录 `Main/results/comparative_analysis_505/logs/`。
+

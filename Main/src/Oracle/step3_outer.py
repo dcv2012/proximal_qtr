@@ -126,7 +126,7 @@ def train_outer_policies(train_loader: DataLoader, val_loader: DataLoader, param
         model_f2.load_state_dict(best_f2_state)
     return model_f1, model_f2, best_val_loss
 
-def optimize_outer_hyperparams(df_train: pd.DataFrame, oracle_train: np.ndarray, df_val: pd.DataFrame, oracle_val: np.ndarray, q: float, n_trials: int = 10, epochs: int = 200, phi_type: int = 1, model_type: str = "linear") -> Dict[str, Any]:
+def optimize_outer_hyperparams(df_train: pd.DataFrame, oracle_train: np.ndarray, df_val: pd.DataFrame, oracle_val: np.ndarray, q: float, n_trials: int = 15, epochs: int = 200, phi_type: int = 1, model_type: str = "linear") -> Dict[str, Any]:
     train_dataset = prepare_outer_tensors(df_train, oracle_train, q)
     val_dataset = prepare_outer_tensors(df_val, oracle_val, q)
     train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
