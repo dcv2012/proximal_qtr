@@ -1,4 +1,7 @@
 import numpy as np
+import torch
+
+_DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def compute_weighted_quantile(y: np.ndarray, weights: np.ndarray, tau: float) -> float:
     y = np.asarray(y)
@@ -43,26 +46,35 @@ def inner_optimization(Y2: np.ndarray, A1: np.ndarray, A2: np.ndarray, d1_pred: 
     
     return compute_weighted_quantile(Y2, final_weights, tau)
 
-def inner_optimization_grid(Y2: np.ndarray, ipw_vals: np.ndarray, phi1: np.ndarray, phi2: np.ndarray, grid_Q: np.ndarray, tau: float = 0.5):
+
+def inner_optimization_grid(
+    Y2,
+    ipw_vals,
+    phi1,
+    phi2,
+    grid_Q,
+    tau: float = 0.5,
+    device: torch.device = _DEVICE,
+):
     """
-    SRA AO 的内层优化：网格搜索寻找分位数 q。
-    SRA 的 IPW 目标函数使用原始统计量（不做 Hajek 自归一化）。
+    SRA AO 的内层优化：网格搜索寻找分位数 q（全程在 GPU 上运行）。
+    SRA 的 IPW 目标函数使用 argmin 策略（对称 IPW 估计）。
     """
-    from typing import Tuple
-    Y2 = np.asarray(Y2)
-    ipw_vals = np.asarray(ipw_vals)
-    phi1 = np.asarray(phi1)
-    phi2 = np.asarray(phi2)
-    grid_Q = np.asarray(grid_Q)
-    
-    ipw_phi_prod = ipw_vals * phi1 * phi2
-    norm_factor = np.mean(ipw_phi_prod) + 1e-10
-    
-    # 使用 numpy broadcast 高效计算所有 grid 点的生存值
-    sv_array = np.mean((Y2[:, None] > grid_Q[None, :]) * ipw_phi_prod[:, None], axis=0)
-    
-    best_idx = np.argmin(np.abs(sv_array - (1 - tau)))
-    q_new = float(grid_Q[best_idx])
-    sv_val = float(sv_array[best_idx])
-    
+    # 上传到 GPU（如果已是 tensor 则零拷贝）
+    Y2_t     = torch.as_tensor(Y2,      dtype=torch.float32, device=device)
+    ipw_t    = torch.as_tensor(ipw_vals, dtype=torch.float32, device=device)
+    phi1_t   = torch.as_tensor(phi1,    dtype=torch.float32, device=device)
+    phi2_t   = torch.as_tensor(phi2,    dtype=torch.float32, device=device)
+    grid_Q_t = torch.as_tensor(grid_Q,  dtype=torch.float32, device=device)
+
+    weights  = ipw_t * phi1_t * phi2_t           # (N,)
+
+    # [N, G] 广播：全程在 GPU
+    mask     = (Y2_t.unsqueeze(1) > grid_Q_t.unsqueeze(0)).float()
+    sv_array = (mask * weights.unsqueeze(1)).mean(dim=0)   # (G,)
+
+    best_idx = int(torch.argmin(torch.abs(sv_array - (1.0 - tau))).item())
+    q_new    = float(grid_Q[best_idx] if isinstance(grid_Q, np.ndarray) else grid_Q_t[best_idx].item())
+    sv_val   = float(sv_array[best_idx].item())
+
     return q_new, sv_val
