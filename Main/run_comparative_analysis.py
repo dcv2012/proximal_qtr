@@ -33,7 +33,7 @@ def parse_arguments():
     parser.add_argument("--phi_type", type=int, choices=[0, 1, 2, 3, 4], default=1, help="Type of surrogate loss function")
     parser.add_argument("--model_type", type=str, choices=["linear", "nn"], default="nn", help="Class of policy function U_n")
     parser.add_argument("--k_folds", type=int, default=2, help="Number of folds for cross-fitting")
-    parser.add_argument("--max_alt_iters", type=int, default=10, help="Max iterations for SCL optimization")
+    parser.add_argument("--max_alt_iters", type=int, default=50, help="Max iterations for SCL optimization")
     parser.add_argument("--dgp", type=str, choices=["S1", "S2"], default="S1", help="Outcome scenario with S1-linear, S2-nonlinear")
     parser.add_argument("--optim_mode", type=str, choices=["scl", "ao"], default="ao", help="Optimization framework for SRA/Oracle (scl=Binary Search, ao=Grid Search)")
     parser.add_argument("--no_cf", action="store_true", help="Skip cross-fitting for SRA and Oracle (faster)")

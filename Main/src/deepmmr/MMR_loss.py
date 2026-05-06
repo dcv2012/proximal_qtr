@@ -36,7 +36,7 @@ def MMR_loss(model_output, target, kernel_matrix, loss_name: str, lambda_reg: fl
         raise ValueError(f"{loss_name} is not valid. Must be 'U_statistic' or 'V_statistic'.")
     
     if lambda_reg > 0.0:
-        loss = loss + lambda_reg * torch.mean(model_output ** 2)
+        loss += lambda_reg * torch.mean(model_output ** 2)
     
     return loss
         
